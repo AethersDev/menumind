@@ -35,20 +35,29 @@ INGREDIENTS: dict[str, tuple[str, frozenset]] = {
     **_classify("vegan", "peanut peanut_sauce", "peanut"),
     **_classify("vegan", "cashew almond walnut", "tree_nut"),
     **_classify("vegan", "sesame_seed sesame_oil", "sesame"),
-    **_classify("vegan", "tofu edamame", "soy"),
-    **_classify("vegan", "soy_sauce teriyaki_sauce gochujang hoisin", "soy", "gluten"),
-    **_classify("vegan", "wheat_wrapper bao_bun udon_noodle flour graham_cracker", "gluten"),
+    **_classify("vegan", "tofu edamame soybean fermented_soybean", "soy"),
+    **_classify("vegan", "wheat wheat_flour flour udon_noodle", "gluten"),
     **_classify("vegan", "bamboo_shoot bean_sprout broccoli cabbage canola_oil carrot chickpea "
-                "chili cocoa_butter cocoa_mass coconut_milk coriander cucumber cumin "
-                "enoki_mushroom galangal garam_masala garlic glass_noodle glutinous_rice "
-                "green_chili kombu lemongrass lime lime_zest mango matcha onion rice "
-                "rice_noodle scallion sea_salt shallot shiitake_mushroom sugar tamarind "
-                "thai_basil tomato water"),
+                "chili cinnamon cocoa_butter cocoa_mass coconut_milk coriander cucumber cumin "
+                "enoki_mushroom galangal garam_masala garlic ginger glass_noodle glutinous_rice "
+                "green_chili kombu lemongrass lime lime_zest mango matcha molasses onion "
+                "red_chili rice rice_noodle salt scallion sea_salt shallot shiitake_mushroom "
+                "spice_blend sugar tamarind thai_basil tomato vinegar water yeast"),
 }
 
 # Compound ingredients made in house, as the restaurant declares them. A dish is judged by
-# these components, so its labels hold for these recipes, not for every commercial version.
+# these components (a recipe may use another recipe), so its labels hold for these recipes,
+# not for every commercial version. What a recipe leaves out (egg, milk, honey, fish sauce,
+# sesame) is stated by its component list, not by a label.
 HOUSE_RECIPES: dict[str, tuple[str, ...]] = {
+    "peanut_sauce": ("peanut", "coconut_milk", "lime", "sugar", "chili", "water"),
+    "hoisin": ("soybean", "wheat", "sugar", "vinegar", "garlic", "spice_blend"),
+    "bao_bun": ("wheat_flour", "water", "yeast", "sugar", "canola_oil"),
+    "wheat_wrapper": ("wheat_flour", "water", "salt"),
+    "graham_cracker": ("wheat_flour", "sugar", "molasses", "canola_oil", "cinnamon"),
+    "soy_sauce": ("soybean", "wheat", "water", "salt"),
+    "teriyaki_sauce": ("soy_sauce", "sugar", "ginger", "garlic"),
+    "gochujang": ("red_chili", "rice", "fermented_soybean", "salt"),
     "green_curry_paste": ("green_chili", "lemongrass", "galangal", "garlic", "shallot",
                           "lime_zest", "coriander", "cumin"),
     "chili_garlic_oil": ("chili", "garlic", "canola_oil"),
@@ -59,6 +68,15 @@ HOUSE_RECIPES: dict[str, tuple[str, ...]] = {
 
 class MenuError(ValueError):
     """The menu file is inconsistent; it is not loaded."""
+
+
+def _parts(ingredient: str, path: tuple = ()) -> list[str]:
+    """The basic ingredients `ingredient` is made of, through nested house recipes."""
+    if ingredient in path:
+        raise MenuError(f"house recipe cycle: {' -> '.join((*path, ingredient))}")
+    if ingredient not in HOUSE_RECIPES:
+        return [ingredient]
+    return [p for part in HOUSE_RECIPES[ingredient] for p in _parts(part, (*path, ingredient))]
 
 
 @dataclass(frozen=True)
@@ -117,7 +135,7 @@ def _item(d: dict) -> MenuItem:
     for ing in ings:
         if ing != ing.lower() or " " in ing:
             problems.append(f"non-canonical ingredient {ing!r}")
-        for part in HOUSE_RECIPES.get(ing, (ing,)):
+        for part in _parts(ing):
             if part not in INGREDIENTS:
                 problems.append(f"unclassified ingredient {part!r}")
                 continue

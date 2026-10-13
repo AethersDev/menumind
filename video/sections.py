@@ -119,8 +119,10 @@ SECTIONS = [
          text="The live runs were worth it. In the first, 'I'm allergic to nuts' saved only tree "
               "nuts, every time; the extraction rules now say that nuts, with no nut named, means "
               "peanuts too. In the third, a rule I had just added made the extractor drop a "
-              "companion's allergy. That run caught it, and the fourth confirmed the fix. Reading "
-              "every run in full, replies included, is what found both."),
+              "companion's allergy. That run caught it, and the fourth confirmed the fix. And while "
+              "filming this video, the model said an allergy removal had happened before Maya "
+              "confirmed it, so now the app asks those questions in its own words. Reading every "
+              "run in full, replies included, is what found all three."),
     dict(id="S16", part="Engineering", title="Limits", visual=[("card", "limits")],
          text="The limits are written down plainly. MenuMind runs as a single server instance. Its "
               "allergen data covers declared recipes, not cross-contact. And the wording of replies "

@@ -270,15 +270,19 @@ def test_allergy_removal_needs_confirmation(tmp_path):
 
 
 def test_the_app_asks_its_own_question_and_no_other(tmp_path):
-    """Seen live: asked to confirm an allergy removal, the model skipped the app's question,
-    asked "Would you like me to suggest a starter?" instead, and the customer's "yes" to that
-    removed the allergy. Now the app writes the question, and a reply that asks another is
-    rejected."""
-    model_asks = lambda b, m: says("Would you like me to suggest a starter, main, or dessert?")
-    agent, fake = make_agent(tmp_path, responder=model_asks)
+    """Seen live, on the turn that raised an allergy-removal question: the model skipped the
+    question and asked "Would you like me to suggest a starter?" (the customer's "yes" then
+    removed the allergy), and in three replies it said it would "stop treating peanut as an
+    allergy" before anything changed. A turn that raises a question is answered by the app
+    alone; while the question waits, the model's replies may not ask anything."""
+    model = lambda b, m: says("I'll stop treating peanut as an allergy. Want a starter?")
+    agent, fake = make_agent(tmp_path, responder=model)
     c1 = agent.start_conversation("alice")
     agent.turn("alice", c1, "I'm allergic to peanuts.")
+    calls = fake.calls["respond"]
     r = agent.turn("alice", c1, "I'm no longer allergic to peanuts.")
+    assert r.reply == f"**{r.question}**" and fake.calls["respond"] == calls  # no model text
+    r = agent.turn("alice", c1, "hmm, not sure")  # still waiting: the model answers, may not ask
     assert "starter" not in r.reply and r.reply.endswith(f"**{r.question}**")
     assert "asked a question" in r.trace["reply_errors"][0][0]
 

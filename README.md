@@ -108,10 +108,12 @@ the top eligible dishes.
 Every reply that changed a preference starts with a line the app writes, not the model:
 "Every visit: ..." for what is saved and "Just this conversation: ..." for what is temporary,
 matching the ticket. In live runs the model sometimes called a saved change temporary. A
-question the app needs answered (a confirmation or a clarification) ends the reply, also in
-the app's words, and while it waits the model may not ask anything else: in one live run the
-model skipped the app's question and asked "Would you like a suggestion?", and the
-customer's "yes" to that confirmed an allergy removal.
+turn that raises a question (a confirmation or a clarification) is answered by the app alone:
+what changed, then the question. While the question waits, the model answers later messages
+but may not ask anything itself. In live runs the model said an allergy removal had taken
+effect before the customer confirmed it (3 times), and once asked "Would you like me to
+suggest a starter?" in place of the app's question, so the customer's "yes" to that removed
+the allergy.
 
 ## Files
 

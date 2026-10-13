@@ -260,6 +260,7 @@ class Agent:
 
         changes = [describe(d) for dec in decisions for d in dec.events]
         questions = [dec.question for dec in decisions if dec.question]
+        raised = bool(questions)  # this message raised a question (before any re-ask is added)
         trace["decisions"] = [{"rule": d.rule, "outcome": d.outcome, "reason": d.reason}
                               for d in decisions]
         notice = None
@@ -286,15 +287,21 @@ class Agent:
         recs = recommend(self.menu, profile.active)
         question = pending.question if pending else None  # the one awaiting yes or no
 
-        message, picks = self._reply(state, text, profile, recs, changes, questions, notice, trace)
+        if raised:  # the app alone answers a turn that asks something: seen live, the model
+            message, picks = "", []  # said "I'll stop treating peanut" before anything changed
+            trace.update(reply_errors=[], rejected=[], fallback=False)
+        else:
+            message, picks = self._reply(state, text, profile, recs, changes, questions, notice,
+                                         trace)
         reply, mentioned = render(message, picks, self.menu, recs, profile.active["budget_max"])
         # what changed and what must be answered are the app's words, never the model's
         asks = " ".join(f"**{q}**" for q in questions)
         reply = "\n\n".join(part for part in (_changes_line(changes), reply, asks) if part)
         with self._lock:
+            shown = message or " ".join(questions)  # the model's next briefing sees what was asked
             state.history += [{"role": "user", "content": text},
                               {"role": "assistant",
-                               "content": json.dumps({"message": message, "recommend": picks})}]
+                               "content": json.dumps({"message": shown, "recommend": picks})}]
             state.history = state.history[-HISTORY_MESSAGES:]
         return TurnResult(reply, mentioned, changes, question, profile_view(profile), trace)
 

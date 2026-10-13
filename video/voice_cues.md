@@ -131,9 +131,9 @@ File `video/voice/S15.wav` · target ~32 s
 
 ## S15b · What the live runs caught
 
-File `video/voice/S15b.wav` · target ~24 s
+File `video/voice/S15b.wav` · target ~34 s
 
-> The live runs were worth it. In the first, 'I'm allergic to nuts' saved only tree nuts, every time; the extraction rules now say that nuts, with no nut named, means peanuts too. In the third, a rule I had just added made the extractor drop a companion's allergy. That run caught it, and the fourth confirmed the fix. Reading every run in full, replies included, is what found both.
+> The live runs were worth it. In the first, 'I'm allergic to nuts' saved only tree nuts, every time; the extraction rules now say that nuts, with no nut named, means peanuts too. In the third, a rule I had just added made the extractor drop a companion's allergy. That run caught it, and the fourth confirmed the fix. And while filming this video, the model said an allergy removal had happened before Maya confirmed it, so now the app asks those questions in its own words. Reading every run in full, replies included, is what found all three.
 
 ## S16 · Limits
 

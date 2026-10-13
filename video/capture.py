@@ -8,6 +8,8 @@ database, up to 3 times, so no footage has to be faked or hand-edited to look ri
   export OPENAI_API_KEY="$(security find-generic-password -s openai-api-key -w)"
   video/.venv/bin/python video/capture.py               # the real model (spends tokens)
   video/.venv/bin/python video/capture.py --preview     # scripted model: checks mechanics only
+  video/.venv/bin/python video/capture.py --menu-only   # refilm only the menu beat (no model
+                                                        # call in it), keeping the other footage
 
 Writes video/clips/raw/ (frames + timings) and video/assets/capture_data.json.
 """
@@ -158,6 +160,7 @@ def session(pw, shoot: Shoot, menu: dict, db: Path) -> dict:
         shoot.check("hedged", "avoiding shellfish (allergy) (this conversation)" in r["changes"],
                     f"changes {r['changes']}")
         shoot.check("hedged", "shellfish" in (r["question"] or ""), f"question {r['question']!r}")
+        shoot.check("hedged", r["reply"].endswith(f"**{r['question']}**"), "the app asks it")
         r = say(page, b, "No, just for tonight.")
         shoot.check("hedged", r["question"] is None, f"question {r['question']!r}")
         shoot.check("hedged", not any("shellfish" in x for x in r["profile"]["remembered"]), "not saved")
@@ -199,7 +202,7 @@ def session(pw, shoot: Shoot, menu: dict, db: Path) -> dict:
         r = say(page, b, "I'm no longer allergic to peanuts.")
         shoot.check("remove_ask", r["question"] is not None, f"question {r['question']!r}")
         shoot.check("remove_ask", "Allergies: peanut" in r["profile"]["remembered"], "allergy kept until yes")
-        shoot.check("remove_ask", r["reply"].endswith(f"**{r['question']}**"), "the reply ends with the app's question")
+        shoot.check("remove_ask", r["reply"] == f"**{r['question']}**", f"only the app's question: {r['reply'][:80]!r}")
         shoot.check("remove_ask", [(c["attribute"], c["polarity"], c["subject"]) for c in r["trace"]["claims"]]
                     == [("allergen", "negate", "peanut")], f"claims {r['trace']['claims']}")
         shoot.check("remove_ask", [d["rule"] for d in r["trace"]["decisions"]] == ["R10"],
@@ -226,12 +229,7 @@ def session(pw, shoot: Shoot, menu: dict, db: Path) -> dict:
         shoot.check("sam", r["profile"] == {"remembered": [], "this_conversation": []}, f"ticket {r['profile']}")
         shoot.end("sam")
 
-        b = shoot.start("menu_note", "sam")
-        page.click("#open-menu")
-        page.wait_for_selector("dialog#menu[open]")
-        page.wait_for_timeout(3500)
-        shoot.check("menu_note", "Cross-contact" in page.inner_text("dialog#menu"), "allergen note shown")
-        shoot.end("menu_note")
+        film_menu(page, shoot, "sam")
         rec.stop()
         ctx.close()
     finally:
@@ -244,6 +242,46 @@ def session(pw, shoot: Shoot, menu: dict, db: Path) -> dict:
     data["events"] = [dict(zip(("seq", "attribute", "subject", "value", "operation", "scope", "source",
                                 "evidence"), row)) for row in rows]
     return data
+
+
+def film_menu(page, shoot: Shoot, session_name: str) -> None:
+    shoot.start("menu_note", session_name)
+    page.click("#open-menu")
+    page.wait_for_selector("dialog#menu[open]")
+    page.wait_for_timeout(3500)
+    box = page.locator(".menu-note").bounding_box()  # in view, not merely in the page's text
+    shoot.check("menu_note", box is not None and box["y"] + box["height"] <= 1080, "allergen note in view")
+    shoot.end("menu_note")
+
+
+def menu_only() -> None:
+    """Refilm the menu beat alone, on the scripted server: it makes no model call, so the
+    screen is the live app's. The other beats keep their live footage."""
+    beats = json.loads((RAW / "beats.json").read_text())
+    shutil.rmtree(RAW / "menu", ignore_errors=True)
+    db = RAW / "menu.db"
+    db.unlink(missing_ok=True)
+    srv = serve(True, db)
+    shoot = Shoot(strict=True)
+    try:
+        with sync_playwright() as pw:
+            browser = pw.chromium.launch()
+            ctx = browser.new_context(viewport={"width": 1920, "height": 1080})
+            ctx.add_init_script(f"document.addEventListener('DOMContentLoaded', "
+                                f"() => document.documentElement.style.zoom = '{ZOOM}')")
+            page = ctx.new_page()
+            rec = Recorder(ctx, page, "menu")
+            sign_up(page, "sam")
+            film_menu(page, shoot, "menu")
+            rec.stop()
+            browser.close()
+    finally:
+        srv.terminate()
+        srv.wait()
+        print("\n".join(shoot.notes))
+    beats["menu_note"] = shoot.beats["menu_note"]
+    (RAW / "beats.json").write_text(json.dumps(beats, indent=1))
+    print("menu beat refilmed; the other beats are unchanged")
 
 
 def serve(preview: bool, db: Path) -> subprocess.Popen:
@@ -264,7 +302,10 @@ def serve(preview: bool, db: Path) -> subprocess.Popen:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--preview", action="store_true", help="scripted model; checks are reported, not enforced")
+    ap.add_argument("--menu-only", action="store_true", help="refilm only the menu beat")
     args = ap.parse_args()
+    if args.menu_only:
+        return menu_only()
     if not args.preview and not os.environ.get("OPENAI_API_KEY"):
         sys.exit("Set OPENAI_API_KEY first (see the usage at the top of this file).")
     for attempt in range(1, ATTEMPTS + 1):

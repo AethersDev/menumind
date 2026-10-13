@@ -14,16 +14,16 @@ Times from the current build. Captures are the real app on the live model; only 
 | S07 | 1:55.0 | Product | Just tonight | capture: tonight |
 | S08 | 2:08.1 | Product | Coming back | capture: return |
 | S09 | 2:20.7 | Product | Removing an allergy | capture: remove_ask then capture: remove_yes |
-| S10 | 2:38.0 | Product | Another customer | capture: sam |
+| S10 | 2:38.1 | Product | Another customer | capture: sam |
 | S11 | 2:47.7 | Engineering | How it works | card: architecture |
-| S12a | 3:16.0 | Engineering | One conflict: the claim | card: claim |
+| S12a | 3:16.1 | Engineering | One conflict: the claim | card: claim |
 | S12b | 3:32.8 | Engineering | One conflict: the rule | card: rules |
-| S12c | 3:53.1 | Engineering | One conflict: the question | card: pending |
+| S12c | 3:53.2 | Engineering | One conflict: the question | card: pending |
 | S12d | 4:06.2 | Engineering | One conflict: the log | card: events |
-| S13 | 4:17.6 | Engineering | Grounded replies | card: grounding |
+| S13 | 4:17.7 | Engineering | Grounded replies | card: grounding |
 | S14 | 4:44.2 | Engineering | Menu data | card: recipes then capture: menu_note |
-| S14b | 5:07.9 | Engineering | Tests and acceptance | card: testing |
+| S14b | 5:08.0 | Engineering | Tests and acceptance | card: testing |
 | S15 | 5:41.4 | Engineering | Evidence with a real model | card: evidence |
-| S15b | 6:13.6 | Engineering | What the live runs caught | card: lessons |
-| S16 | 6:38.6 | Engineering | Limits | card: limits |
-| S17 | 6:57.6 | Close | Thank you | card: close |
+| S15b | 6:13.7 | Engineering | What the live runs caught | card: lessons |
+| S16 | 6:47.8 | Engineering | Limits | card: limits |
+| S17 | 7:06.8 | Close | Thank you | card: close |

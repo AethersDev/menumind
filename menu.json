@@ -26,7 +26,7 @@
      "ingredients": ["tofu", "green_curry_paste", "coconut_milk", "thai_basil", "bamboo_shoot", "soy_sauce", "rice"], "allergens": ["soy", "gluten"],
      "description": "The same green curry made vegan with tofu, served with rice."},
     {"id": "M3", "name": "Spicy Chicken Bowl", "category": "main", "price": 12.00, "diet": "omnivore", "spice": "hot",
-     "ingredients": ["chicken", "gochujang", "rice", "cucumber", "scallion", "sesame_seed"], "allergens": ["gluten", "soy", "sesame"],
+     "ingredients": ["chicken", "gochujang", "rice", "cucumber", "scallion", "sesame_seed"], "allergens": ["soy", "sesame"],
      "description": "Gochujang-glazed chicken over rice with cucumber and sesame."},
     {"id": "M4", "name": "Teriyaki Chicken Bowl", "category": "main", "price": 12.00, "diet": "omnivore", "spice": "none",
      "ingredients": ["chicken", "teriyaki_sauce", "rice", "cucumber", "scallion", "sesame_seed"], "allergens": ["gluten", "soy", "sesame"],
