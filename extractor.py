@@ -8,14 +8,20 @@ policy is no state change and a request to rephrase.
 from __future__ import annotations
 
 import json
+import logging
+import math
 import time
 from dataclasses import dataclass, field, replace
 from typing import Any, Optional
+
+import anthropic
 
 from memory import ATTRIBUTES, Claim, Modality, Temporal, _check_value, canonical_subject
 
 DEFAULT_MODEL = "claude-haiku-5-5"
 MAX_TOKENS = 4096  # headroom for models that think by default
+
+log = logging.getLogger(__name__)
 
 # ------------------------------------------------------------------------ extraction
 
@@ -130,6 +136,8 @@ def parse_claims(payload: Any) -> Extraction:
             v = d.get("value")
             if spec.values is not None and isinstance(v, str):
                 d["value"] = v.strip().lower()
+            if spec.numeric and isinstance(v, float) and not math.isfinite(v):  # NaN, Infinity
+                raise ValueError(f"{d['attribute']} must be a finite number")
             if spec.numeric and isinstance(v, float) and v.is_integer():
                 d["value"] = int(v)
             c = Claim.from_dict(d)
@@ -149,6 +157,8 @@ class _Stats:
         self.d = {"latency_s": 0.0, "input_tokens": 0, "output_tokens": 0, "calls": 0}
 
     def call(self, client, model: str, system: str, user: str, schema: dict) -> Any:
+        """The parsed JSON reply. Raises anthropic.APIError when the call fails and
+        ValueError when the reply is not JSON."""
         t0 = time.perf_counter()
         try:
             resp = client.messages.create(
@@ -162,26 +172,29 @@ class _Stats:
         usage = getattr(resp, "usage", None)
         self.d["input_tokens"] += getattr(usage, "input_tokens", 0) or 0
         self.d["output_tokens"] += getattr(usage, "output_tokens", 0) or 0
-        text = next(b.text for b in resp.content if getattr(b, "type", None) == "text")
+        text = next((b.text for b in resp.content if getattr(b, "type", None) == "text"), None)
+        if text is None:
+            raise ValueError(f"no text in the reply (stop_reason {getattr(resp, 'stop_reason', None)})")
         return json.loads(text)
 
 
 def _client(client):
-    if client is not None:
-        return client
-    import anthropic  # imported lazily so the pure parts need no SDK
-    return anthropic.Anthropic()
+    return client if client is not None else anthropic.Anthropic()
 
 
 def extract(utterance: str, *, client=None, model: str = DEFAULT_MODEL, retries: int = 1) -> Extraction:
-    """Utterance -> validated claims. Retries once on an API or validation failure."""
+    """Utterance -> validated claims. Retries once when the output is invalid. API errors
+    are not retried here: the client's own retries already covered the transient ones."""
     client = _client(client)
     stats = _Stats()
     last = Extraction([], error="not attempted")
     for _ in range(retries + 1):
         try:
             payload = stats.call(client, model, EXTRACT_SYSTEM, utterance, CLAIM_SCHEMA)
-        except Exception as e:  # network, API, or JSON errors all count as invalid output
+        except anthropic.APIError as e:
+            last = Extraction([], error=f"{type(e).__name__}: {e}")
+            break
+        except ValueError as e:  # not JSON: ask again
             last = Extraction([], error=f"{type(e).__name__}: {e}")
             continue
         last = parse_claims(payload)
@@ -217,15 +230,17 @@ REPLY_ANSWERS = ("yes", "no", "unclear")
 
 def classify_reply_with_stats(question: str, reply: str, *, client=None,
                               model: str = DEFAULT_MODEL) -> tuple[str, dict]:
-    """Return (yes | no | unclear, stats). Any failure is 'unclear', which changes nothing."""
+    """Return (yes | no | unclear, stats). A failed call or unusable output is 'unclear',
+    which changes nothing (SPEC §7). Errors in our own code still raise."""
     stats = _Stats()
     try:
         payload = stats.call(_client(client), model, REPLY_SYSTEM,
                              f"Question: {question}\nReply: {reply}", REPLY_SCHEMA)
         answer = str(payload["answer"]).strip().lower()
-        return (answer if answer in REPLY_ANSWERS else "unclear"), stats.d
-    except Exception:
+    except (anthropic.APIError, ValueError, KeyError, TypeError) as e:
+        log.warning("reply classification failed, treated as unclear: %s", type(e).__name__)
         return "unclear", stats.d
+    return (answer if answer in REPLY_ANSWERS else "unclear"), stats.d
 
 
 def classify_reply(question: str, reply: str, *, client=None, model: str = DEFAULT_MODEL) -> str:

@@ -1,8 +1,10 @@
 """Menu, recommender, agent and server tests. No model is called: FakeLLM scripts it."""
 import itertools
 import json
+import logging
 import os
 import re
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
 os.environ["MENUMIND_NO_APP"] = "1"  # don't build the module-level app on import
@@ -12,7 +14,12 @@ import httpx2
 import pytest
 from fastapi.testclient import TestClient
 
-from agent import Agent
+import accounts as accounts_module
+import agent as agent_module
+import server as server_module
+from accounts import LOGIN_FAILURES_ALLOWED, LOGIN_WINDOW_SECONDS, SESSION_SECONDS, Accounts
+from agent import (CONVERSATION_IDLE_SECONDS, MAX_CONVERSATIONS_PER_USER, Agent,
+                   UnknownConversation)
 from fake_llm import FakeLLM, claim
 from memory import ALLERGENS, DIET_ORDER, EventStore, fold
 from menu import HOUSE_RECIPES, MenuError, load_menu, parse_menu
@@ -160,6 +167,10 @@ LLM_CLAIMS = {
     "Vegetarian, sesame allergy, no mushrooms.": [
         claim("diet", value="vegetarian"), claim("allergen", subject="sesame"),
         {**claim("disliked_ingredient", subject="mushroom"), "evidence": None}],
+    "I'm vegan and allergic to peanuts.": [claim("diet", value="vegan"),
+                                           claim("allergen", subject="peanut")],
+    "No peanut allergy now, and I'm not vegan anymore.": [
+        claim("allergen", "negate", subject="peanut"), claim("diet", "negate", value="vegan")],
     "Something is wrong with me.": "invalid",
     "yes, sure": "invalid",
 }
@@ -172,7 +183,8 @@ def make_agent(tmp_path, **llm):
 
 def test_natural_preferences_become_grounded_recommendations(tmp_path):
     agent, fake = make_agent(tmp_path)
-    r = agent.turn("alice", "c1", SPICY)
+    c1 = agent.start_conversation("alice")
+    r = agent.turn("alice", c1, SPICY)
     assert r.profile["remembered"] == ["Spice: hot", "Dislikes: mushroom"]
     assert r.mentioned, "expected a recommendation"
     for m in r.mentioned:
@@ -184,27 +196,31 @@ def test_natural_preferences_become_grounded_recommendations(tmp_path):
 
 def test_memory_survives_new_conversation_and_restart(tmp_path):
     agent, _ = make_agent(tmp_path)
-    agent.turn("alice", "c1", SPICY)
+    agent.turn("alice", agent.start_conversation("alice"), SPICY)
     agent.store.close()
     fresh, fake = make_agent(tmp_path)  # new process, same database
-    assert fresh.profile("alice", "c2").durable["spice_tolerance"] == "hot"
-    fresh.turn("alice", "c2", "What do you recommend?")
+    assert fresh.profile("alice").durable["spice_tolerance"] == "hot"
+    fresh.turn("alice", fresh.start_conversation("alice"), "What do you recommend?")
     saved = fake.briefings[-1]["profile"]["saved"]
     assert (saved["spice_tolerance"], saved["disliked_ingredient"]) == ("hot", ["mushroom"])
 
 
 def test_preference_update_changes_recommendations(tmp_path):
     agent, fake = make_agent(tmp_path)
-    agent.turn("alice", "c1", SPICY)
-    r = agent.turn("alice", "c1", "I don't like spicy food anymore.")
+    c1 = agent.start_conversation("alice")
+    agent.turn("alice", c1, SPICY)
+    r = agent.turn("alice", c1, "I don't like spicy food anymore.")
     assert "Spice: none" in r.profile["remembered"]
     assert all(MENU.get(c["id"]).spice == "none" for c in fake.briefings[-1]["recommendable"][:3])
 
 
 def test_users_are_isolated(tmp_path):
     agent, fake = make_agent(tmp_path)
-    agent.turn("alice", "c1", "I'm allergic to peanuts.")
-    agent.turn("bob", "c1", "What do you recommend?")  # same conversation id, other user
+    alice = agent.start_conversation("alice")
+    agent.turn("alice", alice, "I'm allergic to peanuts.")
+    with pytest.raises(UnknownConversation):  # a conversation id belongs to one user
+        agent.turn("bob", alice, "What do you recommend?")
+    agent.turn("bob", agent.start_conversation("bob"), "What do you recommend?")
     bob = fake.briefings[-1]
     assert bob["profile"]["saved"]["allergen"] == bob["profile"]["enforced_now"]["allergen"] == []
     assert bob["unsuitable"] == []  # alice's peanut allergy excludes nothing for bob
@@ -212,11 +228,12 @@ def test_users_are_isolated(tmp_path):
 
 def test_allergy_removal_needs_confirmation(tmp_path):
     agent, _ = make_agent(tmp_path, replies={"yes": "yes"})
-    agent.turn("alice", "c1", "I'm allergic to peanuts.")
-    r = agent.turn("alice", "c1", "I'm no longer allergic to peanuts.")
+    c1 = agent.start_conversation("alice")
+    agent.turn("alice", c1, "I'm allergic to peanuts.")
+    r = agent.turn("alice", c1, "I'm no longer allergic to peanuts.")
     assert r.question and "peanut" in r.question
     assert "Allergies: peanut" in r.profile["remembered"]  # still enforced
-    r = agent.turn("alice", "c1", "yes")
+    r = agent.turn("alice", c1, "yes")
     assert r.trace["confirmation"] == "yes"
     assert all(not line.startswith("Allergies") for line in r.profile["remembered"])
     assert r.question is None
@@ -224,9 +241,10 @@ def test_allergy_removal_needs_confirmation(tmp_path):
 
 def test_unclear_answer_changes_nothing_and_asks_again(tmp_path):
     agent, _ = make_agent(tmp_path)
-    agent.turn("alice", "c1", "I'm allergic to peanuts.")
-    agent.turn("alice", "c1", "I'm no longer allergic to peanuts.")
-    r = agent.turn("alice", "c1", "hmm, not sure")
+    c1 = agent.start_conversation("alice")
+    agent.turn("alice", c1, "I'm allergic to peanuts.")
+    agent.turn("alice", c1, "I'm no longer allergic to peanuts.")
+    r = agent.turn("alice", c1, "hmm, not sure")
     assert r.trace["confirmation"] == "unclear" and r.question
     assert "Allergies: peanut" in r.profile["remembered"]
 
@@ -234,7 +252,8 @@ def test_unclear_answer_changes_nothing_and_asks_again(tmp_path):
 def test_recommended_dishes_are_rendered_by_code(tmp_path):
     """The model picks dishes by ID; code writes each one's menu name, price and reasons."""
     agent, _ = make_agent(tmp_path, responder=lambda b, m: says("Two good fits.", "M2", "D3"))
-    r = agent.turn("alice", "c1", SPICY)
+    c1 = agent.start_conversation("alice")
+    r = agent.turn("alice", c1, SPICY)
     assert r.reply == ("Two good fits.\n\n"
                        "- **Green Curry with Tofu** ($14.00): matches your spice level (hot)\n"
                        "- **Coconut Lime Sorbet** ($6.00)")
@@ -244,7 +263,8 @@ def test_recommended_dishes_are_rendered_by_code(tmp_path):
 def test_unsafe_recommendation_is_rejected_then_rewritten(tmp_path):
     attempts = iter([says("You'll love this.", "S4"), says("Try this instead.", "M9")])
     agent, fake = make_agent(tmp_path, responder=lambda b, m: next(attempts))
-    r = agent.turn("alice", "c1", "I'm allergic to peanuts.")
+    c1 = agent.start_conversation("alice")
+    r = agent.turn("alice", c1, "I'm allergic to peanuts.")
     assert fake.calls["respond"] == 2 and not r.trace["fallback"]
     assert [m["id"] for m in r.mentioned] == ["M9"]
     assert "must avoid" in r.trace["reply_errors"][0][0]
@@ -252,7 +272,8 @@ def test_unsafe_recommendation_is_rejected_then_rewritten(tmp_path):
 
 def test_rule_breaking_model_falls_back_to_menu_data(tmp_path):
     agent, fake = make_agent(tmp_path, responder=lambda b, m: says("The Lobster Roll is $30."))
-    r = agent.turn("alice", "c1", "I'm vegetarian.")
+    c1 = agent.start_conversation("alice")
+    r = agent.turn("alice", c1, "I'm vegetarian.")
     assert r.trace["fallback"] and fake.calls["respond"] == 2
     assert "$30" not in r.reply and r.mentioned
     assert all(MENU.get(m["id"]).diet in ("vegetarian", "vegan") for m in r.mentioned)
@@ -260,7 +281,8 @@ def test_rule_breaking_model_falls_back_to_menu_data(tmp_path):
 
 def test_unreadable_preference_fails_closed(tmp_path):
     agent, fake = make_agent(tmp_path)
-    r = agent.turn("alice", "c1", "Something is wrong with me.")
+    c1 = agent.start_conversation("alice")
+    r = agent.turn("alice", c1, "Something is wrong with me.")
     assert r.trace["extract_error"] and FAILED_CLOSED in r.reply
     assert r.mentioned == [] and r.profile["remembered"] == [] and fake.calls["respond"] == 0
 
@@ -269,8 +291,8 @@ def test_extraction_outage_recommends_nothing(tmp_path):
     """Audit #1, case A: with the API down a stated allergy can't be read, so nothing is
     recommended (before, the fallback offered edamame to a soy-allergic customer)."""
     down = SimpleNamespace(messages=SimpleNamespace(create=api_down))
-    r = Agent(EventStore(str(tmp_path / "db.sqlite")), MENU, down).turn(
-        "alice", "c1", "I'm allergic to soy.")
+    agent = Agent(EventStore(str(tmp_path / "db.sqlite")), MENU, down)
+    r = agent.turn("alice", agent.start_conversation("alice"), "I'm allergic to soy.")
     assert FAILED_CLOSED in r.reply and r.mentioned == [] and r.changes == []
 
 
@@ -278,9 +300,10 @@ def test_extraction_failure_leaves_a_pending_question_open(tmp_path):
     """Case A with a question pending: an unread reply might restate the allergy (SPEC §7
     step 1), so it is not classified as an answer."""
     agent, fake = make_agent(tmp_path, replies={"yes, sure": "yes"})
-    agent.turn("alice", "c1", "I'm allergic to peanuts.")
-    agent.turn("alice", "c1", "I'm no longer allergic to peanuts.")
-    r = agent.turn("alice", "c1", "yes, sure")
+    c1 = agent.start_conversation("alice")
+    agent.turn("alice", c1, "I'm allergic to peanuts.")
+    agent.turn("alice", c1, "I'm no longer allergic to peanuts.")
+    r = agent.turn("alice", c1, "yes, sure")
     assert "Allergies: peanut" in r.profile["remembered"] and "peanut" in r.question
     assert fake.calls["classify"] == 0
 
@@ -289,18 +312,21 @@ def test_narration_outage_falls_back_to_grounded_dishes(tmp_path):
     """Audit #1, case B: the allergy is saved and only the reply model fails, so the reply is
     built from verified data and avoids soy."""
     agent, _ = make_agent(tmp_path, responder=api_down)
-    r = agent.turn("alice", "c1", "I'm allergic to soy.")
+    c1 = agent.start_conversation("alice")
+    r = agent.turn("alice", c1, "I'm allergic to soy.")
     assert r.trace["fallback"] and "Noted: avoiding soy (allergy)." in r.reply
     assert r.mentioned and all("soy" not in MENU.get(m["id"]).allergens for m in r.mentioned)
 
 
 def test_fallback_keeps_the_stale_confirmation_notice(tmp_path):
     agent, _ = make_agent(tmp_path, replies={"yes": "yes"}, responder=api_down)
-    agent.turn("alice", "c1", "I'm allergic to peanuts.")
-    agent.turn("alice", "c1", "I'm no longer allergic to peanuts.")
-    agent.turn("alice", "c2", "I'm no longer allergic to peanuts.")
-    agent.turn("alice", "c2", "yes")  # removed from the second conversation
-    r = agent.turn("alice", "c1", "yes")
+    c1 = agent.start_conversation("alice")
+    c2 = agent.start_conversation("alice")
+    agent.turn("alice", c1, "I'm allergic to peanuts.")
+    agent.turn("alice", c1, "I'm no longer allergic to peanuts.")
+    agent.turn("alice", c2, "I'm no longer allergic to peanuts.")
+    agent.turn("alice", c2, "yes")  # removed from the second conversation
+    r = agent.turn("alice", c1, "yes")
     assert "earlier question no longer applies" in r.reply
 
 
@@ -308,8 +334,9 @@ def test_temporary_loosening_is_shown_and_briefed(tmp_path):
     """Audit #3: 'meat is fine tonight' over a saved vegetarian diet is shown as a change,
     and the reply model gets the enforced profile, not display lines."""
     agent, fake = make_agent(tmp_path)
-    agent.turn("alice", "c1", "I'm vegetarian.")
-    r = agent.turn("alice", "c1", "Meat is fine tonight.")
+    c1 = agent.start_conversation("alice")
+    agent.turn("alice", c1, "I'm vegetarian.")
+    r = agent.turn("alice", c1, "Meat is fine tonight.")
     assert r.profile == {"remembered": ["Diet: vegetarian"],
                          "this_conversation": ["Diet: omnivore (saved: vegetarian)"]}
     brief = fake.briefings[-1]["profile"]
@@ -320,8 +347,74 @@ def test_invalid_claim_rejects_the_whole_message(tmp_path):
     """A bad third claim used to fail after the first two were saved. The whole batch is
     validated before anything is applied."""
     agent, _ = make_agent(tmp_path)
-    r = agent.turn("alice", "c1", "Vegetarian, sesame allergy, no mushrooms.")
+    c1 = agent.start_conversation("alice")
+    r = agent.turn("alice", c1, "Vegetarian, sesame allergy, no mushrooms.")
     assert FAILED_CLOSED in r.reply and r.profile["remembered"] == []
+
+
+@pytest.mark.parametrize("output", ["{not json", '{"message": "hi"}', '["a list"]',
+                                    '{"message": 5, "recommend": []}', ""])
+def test_malformed_model_output_falls_back(tmp_path, output):
+    """A successful API call with unusable output gets the grounded fallback, not a 500."""
+    agent, fake = make_agent(tmp_path, responder=lambda b, m: output)
+    r = agent.turn("alice", agent.start_conversation("alice"), "I'm allergic to peanuts.")
+    assert r.trace["fallback"] and fake.calls["respond"] == 2 and r.mentioned
+    assert all("peanut" not in MENU.get(m["id"]).allergens for m in r.mentioned)
+
+
+def test_question_awaiting_an_answer_is_the_pending_one(tmp_path):
+    """Audit #11: a clarifying question asked after a confirmation must not be reported as
+    the question awaiting yes or no."""
+    agent, _ = make_agent(tmp_path)
+    c1 = agent.start_conversation("alice")
+    agent.turn("alice", c1, "I'm vegan and allergic to peanuts.")
+    r = agent.turn("alice", c1, "No peanut allergy now, and I'm not vegan anymore.")
+    assert r.question == agent.pending_question("alice", c1) and "peanut" in r.question
+
+
+def test_conversation_ids_are_issued_and_user_bound(tmp_path):
+    agent, fake = make_agent(tmp_path)
+    c1 = agent.start_conversation("alice")
+    for user, cid in (("bob", c1), ("alice", "made-up-0001")):
+        with pytest.raises(UnknownConversation):
+            agent.turn(user, cid, "What do you recommend?")
+    assert fake.calls["extract"] == 0  # rejected before any model call
+
+
+def test_idle_conversation_ends_but_saved_preferences_stay(tmp_path, monkeypatch):
+    now = [0.0]
+    monkeypatch.setattr(agent_module, "monotonic", lambda: now[0])
+    agent, _ = make_agent(tmp_path)
+    c1 = agent.start_conversation("alice")
+    agent.turn("alice", c1, "I'm allergic to peanuts.")
+    now[0] += CONVERSATION_IDLE_SECONDS + 1
+    with pytest.raises(UnknownConversation):
+        agent.turn("alice", c1, "What do you recommend?")
+    assert agent.profile("alice").durable["allergen"] == {"peanut"}
+
+
+def test_open_conversations_are_capped_per_user_and_in_total(tmp_path, monkeypatch):
+    agent, _ = make_agent(tmp_path)
+    ids = [agent.start_conversation("alice") for _ in range(MAX_CONVERSATIONS_PER_USER + 1)]
+    with pytest.raises(UnknownConversation):
+        agent.profile("alice", ids[0])  # the least recently used one was dropped
+    assert all(agent.profile("alice", cid) for cid in ids[1:])
+    monkeypatch.setattr(agent_module, "MAX_CONVERSATIONS", 2)
+    bob, carol, dave = (agent.start_conversation(u) for u in ("bob", "carol", "dave"))
+    with pytest.raises(UnknownConversation):
+        agent.profile("bob", bob)
+    assert agent.profile("carol", carol) and agent.profile("dave", dave)
+
+
+def test_absorbed_model_failures_are_logged(tmp_path, caplog):
+    agent, _ = make_agent(tmp_path, responder=api_down)
+    c1 = agent.start_conversation("alice")
+    with caplog.at_level(logging.WARNING):
+        agent.turn("alice", c1, "Something is wrong with me.")
+        agent.turn("alice", c1, "I'm allergic to soy.")
+    logged = " ".join(r.getMessage() for r in caplog.records)
+    assert "extraction failed" in logged and "reply model failed" in logged
+    assert "soy" not in logged  # customer text is not logged
 
 
 # ======================================================================= server
@@ -364,10 +457,77 @@ def test_chat_round_trip_and_isolation(app):
     a, cid = signup(app, "alice")
     r = a.post("/api/chat", json={"conversation_id": cid, "message": "I'm allergic to peanuts."}).json()
     assert "Allergies: peanut" in r["profile"]["remembered"]
-    b = TestClient(app)
-    b.post("/api/register", json={"username": "bob", "pin": "4321"})
-    me = b.get(f"/api/me?conversation_id={cid}").json()  # bob guesses alice's conversation id
-    assert me["profile"] == {"remembered": [], "this_conversation": []}
+    b, _ = signup(app, "bob", "4321")
+    assert b.get(f"/api/me?conversation_id={cid}").status_code == 404  # bob guesses alice's id
+    assert b.post("/api/chat", json={"conversation_id": cid, "message": "hi"}).status_code == 404
+    assert b.get("/api/me").json()["profile"] == {"remembered": [], "this_conversation": []}
+
+
+def test_only_issued_conversation_ids_are_accepted(app):
+    a, _ = signup(app, "alice")
+    assert a.post("/api/chat", json={"conversation_id": "AAAAAAAA-made-up",
+                                     "message": "hi"}).status_code == 404
+    assert a.get("/api/me?conversation_id=none-yet-0").status_code == 404
+
+
+def test_http_trace_keeps_internal_errors_out(app):
+    a, cid = signup(app, "alice")
+    trace = a.post("/api/chat", json={"conversation_id": cid,
+                                      "message": "Something is wrong with me."}).json()["trace"]
+    assert set(trace) <= {"claims", "decisions", "confirmation", "fallback"}
+
+
+def test_unexpected_error_is_sanitized(tmp_path):
+    def broken(**_):
+        raise RuntimeError("secret-internal-detail")
+    app = create_app(db_path=str(tmp_path / "srv.sqlite"),
+                     client=SimpleNamespace(messages=SimpleNamespace(create=broken)))
+    c = TestClient(app, raise_server_exceptions=False)
+    assert c.post("/api/register", json={"username": "alice", "pin": "1234"}).status_code == 200
+    cid = c.post("/api/conversations").json()["conversation_id"]
+    r = c.post("/api/chat", json={"conversation_id": cid, "message": "hi"})
+    assert r.status_code == 500 and "ticket shows what is saved" in r.json()["detail"]
+    assert "secret" not in r.text
+
+
+def test_login_attempts_are_limited_per_username(app, monkeypatch):
+    now = [0.0]
+    monkeypatch.setattr(accounts_module, "monotonic", lambda: now[0])
+    signup(app, "alice")
+    c = TestClient(app)
+    for _ in range(LOGIN_FAILURES_ALLOWED):
+        assert c.post("/api/login", json={"username": "alice", "pin": "0000"}).status_code == 401
+    assert c.post("/api/login", json={"username": "alice", "pin": "1234"}).status_code == 429
+    now[0] += LOGIN_WINDOW_SECONDS + 1
+    assert c.post("/api/login", json={"username": "alice", "pin": "1234"}).status_code == 200
+
+
+def test_sessions_expire_and_are_cleaned_up(tmp_path, monkeypatch):
+    acc = Accounts(str(tmp_path / "acc.sqlite"))
+    old = acc.start_session(acc.register("alice", "1234"))
+    later = datetime.now(timezone.utc) + timedelta(seconds=SESSION_SECONDS + 1)
+    monkeypatch.setattr(accounts_module, "_now", lambda: later)
+    assert acc.session_user(old) is None
+    acc.start_session(acc.login("alice", "1234"))
+    assert acc._db.execute("SELECT COUNT(*) FROM sessions WHERE token = ?", (old,)).fetchone() == (0,)
+
+
+@pytest.mark.parametrize("pin", ["12", "1234\n", "١٢٣٤", "1" * 13])
+def test_register_rejects_bad_pins(app, pin):
+    assert TestClient(app).post("/api/register",
+                                json={"username": "alice", "pin": pin}).status_code == 400
+
+
+def test_oversized_credentials_are_rejected_before_hashing(app):
+    r = TestClient(app).post("/api/login", json={"username": "a" * 1000, "pin": "1234"})
+    assert r.status_code == 422
+
+
+def test_model_client_has_bounded_timeout_and_retries(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    client = server_module._anthropic_client()
+    assert (client.timeout, client.max_retries) == (server_module.MODEL_TIMEOUT_S,
+                                                    server_module.MODEL_RETRIES)
 
 
 def test_returning_user_sees_saved_preferences(app):

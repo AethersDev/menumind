@@ -17,8 +17,12 @@ run outside the lock.
 from __future__ import annotations
 
 import json
+import logging
 import threading
+import uuid
+from collections import OrderedDict
 from dataclasses import dataclass, field
+from time import monotonic
 from typing import Optional
 
 import anthropic
@@ -31,6 +35,11 @@ from recommend import MAX_PICKS, Recommendations, check_reply, recommend, render
 
 HISTORY_MESSAGES = 8
 RECOMMENDABLE_LIMIT = 8
+CONVERSATION_IDLE_SECONDS = 3 * 60 * 60  # a conversation ends after this long unused (SPEC §12.2)
+MAX_CONVERSATIONS_PER_USER = 5          # open at once; starting another drops the oldest
+MAX_CONVERSATIONS = 1000                # in memory across all users
+
+log = logging.getLogger(__name__)
 
 _EXTRACT_FAILED = ("I couldn't process your dietary preferences right now, so I haven't updated "
                    "your profile or generated recommendations. Please try again or rephrase "
@@ -78,6 +87,10 @@ class ModelUnavailable(RuntimeError):
     """No model client can be created (for example, no API key)."""
 
 
+class UnknownConversation(LookupError):
+    """The conversation was not issued to this user, or it has ended."""
+
+
 @dataclass
 class TurnResult:
     reply: str
@@ -91,6 +104,7 @@ class TurnResult:
 @dataclass
 class _ConvState:
     conv: Conversation
+    last_used: float
     history: list = field(default_factory=list)  # model-facing messages, tokens unrendered
 
 
@@ -158,7 +172,7 @@ class Agent:
         self._client, self._client_factory = client, client_factory
         self.extract_model, self.reply_model = extract_model, reply_model
         self._lock = threading.Lock()
-        self._convs: dict[tuple[str, str], _ConvState] = {}
+        self._convs: OrderedDict[tuple[str, str], _ConvState] = OrderedDict()  # oldest use first
         self._system = REPLY_SYSTEM.format(restaurant=menu.restaurant)
 
     @property
@@ -170,14 +184,39 @@ class Agent:
             self._client = self._client_factory()
         return self._client
 
-    def _state(self, user_id: str, conversation_id: str) -> _ConvState:
-        key = (user_id, conversation_id)  # user-scoped: another user's id never matches
-        if key not in self._convs:
-            self._convs[key] = _ConvState(Conversation(self.store, user_id, conversation_id))
-        return self._convs[key]
-
-    def profile(self, user_id: str, conversation_id: str) -> Profile:
+    def start_conversation(self, user_id: str) -> str:
+        """Issue a conversation id bound to this user. Drops ended conversations, then the
+        least recently used ones past the limits. Saved preferences are never affected."""
+        cid = str(uuid.uuid4())
         with self._lock:
+            now = monotonic()
+            for key in [k for k, s in self._convs.items()
+                        if now - s.last_used > CONVERSATION_IDLE_SECONDS]:
+                del self._convs[key]
+            mine = [k for k in self._convs if k[0] == user_id]
+            for key in mine[:max(0, len(mine) + 1 - MAX_CONVERSATIONS_PER_USER)]:
+                del self._convs[key]
+            while len(self._convs) >= MAX_CONVERSATIONS:
+                self._convs.popitem(last=False)
+            self._convs[(user_id, cid)] = _ConvState(Conversation(self.store, user_id, cid), now)
+        return cid
+
+    def _state(self, user_id: str, conversation_id: str) -> _ConvState:
+        """Call with self._lock held."""
+        key = (user_id, conversation_id)  # user-scoped: another user's id never matches
+        state, now = self._convs.get(key), monotonic()
+        if state is None or now - state.last_used > CONVERSATION_IDLE_SECONDS:
+            self._convs.pop(key, None)
+            raise UnknownConversation(conversation_id)
+        state.last_used = now
+        self._convs.move_to_end(key)
+        return state
+
+    def profile(self, user_id: str, conversation_id: Optional[str] = None) -> Profile:
+        """The profile in a conversation, or only what is saved when none is given."""
+        with self._lock:
+            if conversation_id is None:
+                return self.store.profile(user_id, "")  # "" matches no conversation's events
             return self._state(user_id, conversation_id).conv.profile()
 
     def pending_question(self, user_id: str, conversation_id: str) -> Optional[str]:
@@ -187,14 +226,16 @@ class Agent:
 
     def turn(self, user_id: str, conversation_id: str, text: str) -> TurnResult:
         trace: dict = {}
+        with self._lock:
+            state = self._state(user_id, conversation_id)  # unknown ids fail before any model call
         ext = extract(text, client=self.client, model=self.extract_model)
         trace["claims"] = [_claim_dict(c) for c in ext.claims]
         trace["extract_error"] = ext.error
 
         with self._lock:
-            state = self._state(user_id, conversation_id)
             conv = state.conv
             if ext.error is not None:  # fail closed: no change, no answer, no recommendation
+                log.warning("extraction failed user=%s: %s", user_id, ext.error)
                 pending = conv.pending
                 return TurnResult(_EXTRACT_FAILED, [], [], pending.question if pending else None,
                                   profile_view(conv.profile()), trace)
@@ -220,14 +261,15 @@ class Agent:
                         if verdict == "no":
                             changes.append("kept as it was")
                     except StaleConfirmation:
+                        log.info("stale confirmation user=%s", user_id)
                         notice = "The earlier question no longer applies; nothing was changed."
             else:
                 questions.append(still_pending.question)
 
         with self._lock:
-            profile = conv.profile()
+            profile, pending = conv.profile(), conv.pending
         recs = recommend(self.menu, profile.active)
-        question = questions[-1] if questions else None
+        question = pending.question if pending else None  # the one awaiting yes or no
 
         message, picks, errors, fallback = self._reply(state, text, profile, recs, changes,
                                                        questions, notice)
@@ -279,6 +321,7 @@ class Agent:
             try:
                 raw = self._call(messages)
             except anthropic.APIError as e:
+                log.warning("reply model failed, using the fallback: %s", type(e).__name__)
                 errors.append(f"{type(e).__name__}: {e}")
                 break
             try:
@@ -291,6 +334,7 @@ class Agent:
                     problems.append("empty message")
             if not problems:
                 return message, picks, errors, False
+            log.warning("reply model output rejected: %s", "; ".join(problems))
             errors.append(problems)
             messages = messages + [
                 {"role": "assistant", "content": raw or "(empty)"},

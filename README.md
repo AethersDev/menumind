@@ -6,9 +6,11 @@ A neuro-symbolic conversational recommendation system combining LLM-based langua
 understanding, deterministic recommendation logic, and event-sourced preference memory.
 
 MenuMind learns each customer's preferences from normal conversation, remembers them across
-visits, and recommends real dishes from a fixed menu. It never invents dishes or prices, and
-it never loosens an allergy or diet without asking. The demo serves the menu of a fictional
-restaurant, Lantern Street Kitchen.
+visits, and recommends real dishes from a fixed menu. Recommended dishes, their names and
+their prices always come from the menu and pass the customer's allergies and diet. An allergy
+is never removed without a confirmed yes, and a diet only loosens when the customer names the
+new one. The model's own sentences are checked only in part (see limitations). The demo serves
+the menu of a fictional restaurant, Lantern Street Kitchen.
 
 ## Architecture
 
@@ -110,7 +112,7 @@ built from verified data: the changes it saved and the top eligible dishes.
 ## Tests and evaluation
 
 ```bash
-pytest                                        # 152 tests, no API calls
+pytest                                        # 178 tests, no API calls
 python eval_extractor.py                      # extractor + reply classifier, default model
 python eval_extractor.py --model claude-sonnet-5-5 --price-in <USD/Mtok> --price-out <USD/Mtok>
 ```
@@ -130,6 +132,13 @@ builds from a Dockerfile and offers a persistent disk, for example Render, Fly.i
 2. Attach a persistent volume mounted at `/data` (the database lives at `/data/menumind.db`).
 3. Set `ANTHROPIC_API_KEY` as a secret. `COOKIE_SECURE=1` is already set for HTTPS.
 4. Run a single instance (see limitations).
+5. Cap request bodies at the proxy if your host allows it; the app caps fields, not bodies.
+
+Logs go to stderr. Model failures and rejected model replies are warnings, logged with user
+ids but not message text (an extraction error may quote the value it rejected). Unexpected
+errors are logged with a traceback and answered with a generic 500. Each model call times out
+after 30 seconds and is retried once (`MODEL_TIMEOUT_S`, `MODEL_RETRIES` in `server.py`);
+tune them from the latency the evaluation reports.
 
 ## Limitations, stated plainly
 
@@ -141,13 +150,26 @@ builds from a Dockerfile and offers a persistent disk, for example Render, Fly.i
   customers with severe allergies to confirm with staff.
 - **The model's message is not fully checked.** Recommended dishes are written by code from
   the eligible set, so the recommendation list never contains an ineligible dish. The
-  message itself is checked for
-  full dish names and typed prices, but a dish described in other words ("the shrimp
-  noodles") gets past the check; only the prompt forbids it.
+  message itself is checked for full dish names and typed prices, but a dish described in
+  other words ("the shrimp noodles") or one that doesn't exist ("our lobster roll") gets past
+  the check; only the prompt forbids it.
+- **A message's changes are checked together but saved one by one.** Every claim in a message
+  is validated before anything is saved, so invalid model output saves nothing. A database
+  failure partway through can still save part of a message; the app then answers with an
+  error and refreshes the ticket so it shows what was saved. Making each message one
+  transaction needs a change to `memory.py`.
+- **Conversations end.** A conversation ends after 3 hours unused, when its owner opens a
+  sixth one (5 open per user), or when 1,000 are open on the server; the oldest go first.
+  Conversation ids are issued by the server and bound to one user. Ending a conversation,
+  or restarting the server, drops its temporary preferences, its unanswered question and its
+  recent context; saved preferences stay. The page starts a new conversation when it finds
+  the old one has ended.
 - **"Tonight" means "this conversation".** Returning in a new conversation the same evening
   drops a temporary preference (SPEC §9).
 - **One server process.** Memory updates are serialized by a lock inside the process, so
   concurrent requests are safe on one instance. Several instances would need the optimistic
   concurrency described in SPEC §4.
-- **Sign-in is deliberately simple** (username and PIN, scrypt-hashed, no rate limiting).
-  That suits a demo, not a production deployment.
+- **Sign-in is deliberately simple.** Username and PIN, scrypt-hashed; 5 failed attempts
+  per username lock it for 15 minutes; sessions last 30 days. The lock is per username, so
+  anyone can lock a username out for 15 minutes, and there is no per-IP limit. That suits a
+  demo, not a production deployment.

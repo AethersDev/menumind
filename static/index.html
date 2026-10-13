@@ -284,15 +284,22 @@ function greet(profile) {
   }
 }
 
+const meIn = (cid) => api(`/api/me?conversation_id=${encodeURIComponent(cid)}`);
+
 async function startConversation(fresh) {
   const key = `menumind_conv_${me.username}`;
   conversationId = fresh ? null : store.get(key);
-  if (!conversationId) {
+  // A stored conversation may have ended (idle, or a server restart): then start a new one.
+  let data = conversationId ? await meIn(conversationId).catch((err) => {
+    if (err.status === 404) return null;
+    throw err;
+  }) : null;
+  if (!data) {
     conversationId = (await api("/api/conversations", { method: "POST" })).conversation_id;
     store.set(key, conversationId);
+    data = await meIn(conversationId);
   }
   $("log").innerHTML = "";
-  const data = await api(`/api/me?conversation_id=${encodeURIComponent(conversationId)}`);
   renderTicket(data.profile, data.question);
   greet(data.profile);
   if (data.question) add("agent", `<p>${esc(data.question)}</p>`);
@@ -349,7 +356,16 @@ $("composer").addEventListener("submit", async (e) => {
   } catch (err) {
     typing.remove();
     if (err.status === 401) { showAuth(); return; }
+    if (err.status === 404) {  // the conversation ended while idle
+      await startConversation(true).catch(() => {});
+      add("problem", `<p>${esc(err.message)} I started one; please send your message again.</p>`);
+      $("message").value = text;
+      return;
+    }
     add("problem", `<p>${esc(err.message)}</p>`);
+    // part of the message may have been saved before the error: show what actually is
+    const data = await meIn(conversationId).catch(() => null);
+    if (data) renderTicket(data.profile, data.question);
   } finally {
     busy = false; $("send").disabled = false; $("message").focus();
   }
@@ -358,7 +374,9 @@ $("composer").addEventListener("submit", async (e) => {
 $("message").addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("composer").requestSubmit(); }
 });
-$("new-conv").addEventListener("click", () => startConversation(true));
+$("new-conv").addEventListener("click", () => startConversation(true).catch((err) => {
+  if (err.status === 401) showAuth(); else add("problem", `<p>${esc(err.message)}</p>`);
+}));
 $("logout").addEventListener("click", async () => {
   await api("/api/logout", { method: "POST" }).catch(() => {});
   me = null; showAuth();

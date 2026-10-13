@@ -6,6 +6,8 @@ predictors whose errors are known exactly: an oracle, and single targeted mistak
 import json
 from types import SimpleNamespace
 
+import anthropic
+import httpx2
 import pytest
 
 from eval_extractor import cost_usd, evaluate_confirmations, evaluate_extractor, load, render
@@ -14,6 +16,7 @@ from extractor import (CLAIM_SCHEMA, EXTRACT_SYSTEM, classify_reply, classify_re
 from memory import ATTRIBUTES, Claim, Temporal
 
 CASES = load("extractor_cases.json")["cases"]
+API_DOWN = anthropic.APIConnectionError(request=httpx2.Request("POST", "https://api.anthropic.com"))
 BY_UTTERANCE = {c["utterance"]: c for c in CASES}
 
 
@@ -182,6 +185,8 @@ def test_parse_normalizes_case_and_numbers():
     {"claims": [_item(attribute="diet", value="keto")]},        # value outside vocabulary
     {"claims": [_item(attribute="budget_max", value="15")]},    # number as string
     {"claims": [_item(subject="peanut", evidence=None)]},       # evidence must be text
+    {"claims": [_item(attribute="budget_max", value=float("nan"))]},  # not a number
+    {"claims": [_item(attribute="budget_max", value=float("inf"))]},  # not finite
     {"claims": [{"attribute": "allergen"}]},                    # missing fields
     {"nope": []},
     "not an object",
@@ -227,17 +232,29 @@ def test_reply_stats_are_reported():
 
 
 def test_extract_reports_error_after_retry():
-    fake = FakeClient({"claims": [_item(subject="peanuts")]}, RuntimeError("overloaded"))
+    fake = FakeClient({"claims": [_item(subject="peanuts")]}, API_DOWN)
     x = extract("...", client=fake)
-    assert x.claims == [] and "RuntimeError" in x.error and len(fake.calls) == 2
+    assert x.claims == [] and "APIConnectionError" in x.error and len(fake.calls) == 2
+
+
+def test_extract_leaves_api_retries_to_the_client():
+    """The SDK already retried what is retryable; a second call would double the wait."""
+    fake = FakeClient(API_DOWN, {"claims": []})
+    x = extract("...", client=fake)
+    assert "APIConnectionError" in x.error and len(fake.calls) == 1
 
 
 @pytest.mark.parametrize("output, expected", [
     ({"answer": "YES"}, "yes"), ({"answer": "no"}, "no"), ({"answer": "maybe"}, "unclear"),
-    (RuntimeError("down"), "unclear"), ("{bad", "unclear"),
+    (API_DOWN, "unclear"), ("{bad", "unclear"), (["a list"], "unclear"),
 ])
 def test_classify_reply_defaults_to_unclear(output, expected):
     assert classify_reply("q?", "r", client=FakeClient(output)) == expected
+
+
+def test_a_bug_is_not_hidden_as_unclear():
+    with pytest.raises(RuntimeError):
+        classify_reply("q?", "r", client=FakeClient(RuntimeError("bug in our code")))
 
 
 # ------------------------------------------------------------------ prompt hygiene
