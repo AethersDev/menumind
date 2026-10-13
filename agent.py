@@ -21,14 +21,14 @@ import logging
 import threading
 import uuid
 from collections import OrderedDict
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from time import monotonic
 from typing import Optional
 
 from extractor import MAX_TOKENS, classify_reply, extract
 from llm import DEFAULT_MODEL, MODEL_ERRORS
-from memory import (ATTRIBUTES, Conversation, Decision, Draft, EventStore, Kind, Op, Profile,
-                    Scope, StaleConfirmation)
+from memory import (ATTRIBUTES, Claim, Conversation, Decision, Draft, EventStore, Kind, Op,
+                    Profile, Scope, StaleConfirmation)
 from menu import Menu
 from recommend import MAX_PICKS, Recommendations, check_reply, recommend, render
 
@@ -173,6 +173,8 @@ class Agent:
         self._lock = threading.Lock()
         self._convs: OrderedDict[tuple[str, str], _ConvState] = OrderedDict()  # oldest use first
         self._system = REPLY_SYSTEM.format(restaurant=menu.restaurant)
+        self._words = frozenset(w for i in menu.items for ing in i.ingredients
+                                for w in (ing, *ing.split("_")))  # "shiitake_mushroom", "mushroom"
 
     @property
     def client(self):
@@ -228,7 +230,8 @@ class Agent:
         with self._lock:
             state = self._state(user_id, conversation_id)  # unknown ids fail before any model call
         ext = extract(text, client=self.client, model=self.extract_model)
-        trace["claims"] = [_claim_dict(c) for c in ext.claims]
+        claims = [_menu_word(c, self._words) for c in ext.claims]
+        trace["claims"] = [_claim_dict(c) for c in claims]
         trace["extract_error"] = ext.error
 
         with self._lock:
@@ -239,7 +242,7 @@ class Agent:
                 return TurnResult(_EXTRACT_FAILED, [], [], pending.question if pending else None,
                                   profile_view(conv.profile()), trace)
             before = conv.pending.proposal_id if conv.pending else None
-            decisions: list[Decision] = conv.handle(ext.claims)
+            decisions: list[Decision] = conv.handle(claims)
             still_pending = conv.pending if conv.pending and conv.pending.proposal_id == before else None
 
         changes = [describe(d) for dec in decisions for d in dec.events]
@@ -362,6 +365,20 @@ def fallback_reply(recs: Recommendations, changes: list, questions: list,
     parts.append("A few options that fit:" if recs.candidates
                  else "Nothing on the menu fits every preference you've given me.")
     return " ".join(parts), [c.item.id for c in recs.candidates[:MAX_PICKS]]
+
+
+_PLURALS = (("ies", "y"), ("es", ""), ("s", ""))  # berries, tomatoes, mushrooms
+
+
+def _menu_word(c: Claim, words: frozenset) -> Claim:
+    """A plural ingredient whose singular is a menu word becomes that word ("mushrooms" ->
+    "mushroom"). Stored as said, it would match no dish, and a later statement about the same
+    food would land on a different key. Anything else passes unchanged."""
+    s = c.subject
+    if c.attribute not in ("disliked_ingredient", "liked_ingredient") or s in words:
+        return c
+    return next((replace(c, subject=s[:-len(end)] + add) for end, add in _PLURALS
+                 if s.endswith(end) and s[:-len(end)] + add in words), c)
 
 
 def _drafts(events) -> list[Draft]:

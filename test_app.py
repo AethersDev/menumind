@@ -172,6 +172,10 @@ LLM_CLAIMS = {
                                            claim("allergen", subject="peanut")],
     "No peanut allergy now, and I'm not vegan anymore.": [
         claim("allergen", "negate", subject="peanut"), claim("diet", "negate", value="vegan")],
+    "I hate mushrooms.": [claim("disliked_ingredient", subject="mushrooms")],
+    "Mushroom is fine now.": [claim("disliked_ingredient", "negate", subject="mushroom")],
+    "Love tomatoes and anchovies.": [claim("liked_ingredient", subject="tomatoes"),
+                                     claim("liked_ingredient", subject="anchovies")],
     "Something is wrong with me.": "invalid",
     "yes, sure": "invalid",
 }
@@ -351,6 +355,20 @@ def test_invalid_claim_rejects_the_whole_message(tmp_path):
     c1 = agent.start_conversation("alice")
     r = agent.turn("alice", c1, "Vegetarian, sesame allergy, no mushrooms.")
     assert FAILED_CLOSED in r.reply and r.profile["remembered"] == []
+
+
+def test_plural_ingredients_map_to_the_menu_word(tmp_path):
+    """A live gpt-5.4-mini run returned 'mushrooms'. Stored as said, it matched no dish and a
+    later statement about 'mushroom' missed it. Only plurals of menu words change."""
+    agent, _ = make_agent(tmp_path)
+    c1 = agent.start_conversation("alice")
+    assert agent.turn("alice", c1, "I hate mushrooms.").profile["remembered"] == \
+        ["Dislikes: mushroom"]
+    recs = recommend(MENU, agent.profile("alice", c1).active)
+    assert any("dislike" in why for c in recs.candidates if c.item.id == "M7" for why in c.reasons)
+    assert agent.turn("alice", c1, "Mushroom is fine now.").profile["remembered"] == []
+    assert agent.turn("alice", c1, "Love tomatoes and anchovies.").profile["remembered"] == \
+        ["Likes: anchovies, tomato"]  # no menu word 'anchovy', so it stays as said
 
 
 @pytest.mark.parametrize("output", ["{not json", '{"message": "hi"}', '["a list"]',

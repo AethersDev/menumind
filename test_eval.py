@@ -10,7 +10,7 @@ from types import SimpleNamespace
 import anthropic
 import httpx2
 import pytest
-from openai.resources.responses import Responses
+from openai.resources.chat.completions import Completions
 
 from eval_extractor import cost_usd, evaluate_confirmations, evaluate_extractor, load, render
 from agent import TURN_SCHEMA
@@ -264,19 +264,18 @@ def test_a_bug_is_not_hidden_as_unclear():
 # ------------------------------------------------------------------ OpenAI adapter
 
 class FakeOpenAI:
-    """Records Responses API calls and answers each with the next scripted output text."""
+    """Records Chat Completions calls; answers each with the next scripted message text."""
 
-    def __init__(self, *texts, status="completed", reason=None):
-        self.texts, self.calls = list(texts), []
-        self.status, self.reason = status, reason
-        self.responses = SimpleNamespace(create=self._create)
+    def __init__(self, *texts, finish_reason="stop"):
+        self.texts, self.calls, self.finish_reason = list(texts), [], finish_reason
+        self.chat = SimpleNamespace(completions=SimpleNamespace(create=self._create))
 
     def _create(self, **kw):
         self.calls.append(kw)
+        message = SimpleNamespace(content=self.texts.pop(0), refusal=None)
         return SimpleNamespace(
-            output_text=self.texts.pop(0), status=self.status,
-            incomplete_details=SimpleNamespace(reason=self.reason) if self.reason else None,
-            usage=SimpleNamespace(input_tokens=7, output_tokens=3))
+            choices=[SimpleNamespace(message=message, finish_reason=self.finish_reason)],
+            usage=SimpleNamespace(prompt_tokens=7, completion_tokens=3))
 
 
 def test_openai_adapter_sends_a_strict_schema_and_stores_nothing():
@@ -284,22 +283,24 @@ def test_openai_adapter_sends_a_strict_schema_and_stores_nothing():
     x = extract("I'm allergic to sesame", client=OpenAIClient(sdk), model="m")
     assert x.error is None and x.claims[0].subject == "sesame" and x.stats["input_tokens"] == 7
     call = sdk.calls[0]
-    assert call["instructions"] == EXTRACT_SYSTEM and call["model"] == "m"
-    assert call["input"] == [{"role": "user", "content": "I'm allergic to sesame"}]
-    assert call["text"] == {"format": {"type": "json_schema", "name": "reply",
-                                       "schema": CLAIM_SCHEMA, "strict": True}}
-    assert call["store"] is False and call["max_output_tokens"] == MAX_TOKENS
+    assert call["model"] == "m" and call["messages"] == [
+        {"role": "developer", "content": EXTRACT_SYSTEM},
+        {"role": "user", "content": "I'm allergic to sesame"}]
+    assert call["response_format"] == {"type": "json_schema", "json_schema": {
+        "name": "reply", "schema": CLAIM_SCHEMA, "strict": True}}
+    assert call["store"] is False and call["max_completion_tokens"] == MAX_TOKENS
 
 
 def test_truncated_openai_output_counts_as_invalid():
-    sdk = FakeOpenAI("", "", status="incomplete", reason="max_output_tokens")
+    """Cut off at the token limit: the partial text is not passed on as an answer."""
+    sdk = FakeOpenAI('{"claims": [', '{"claims": [', finish_reason="length")
     x = extract("...", client=OpenAIClient(sdk), model="m")
-    assert "max_output_tokens" in x.error and len(sdk.calls) == 2
+    assert "stop_reason length" in x.error and len(sdk.calls) == 2
 
 
 def test_openai_adapter_matches_the_installed_sdk():
-    params = inspect.signature(Responses.create).parameters
-    assert {"model", "instructions", "input", "max_output_tokens", "text", "store"} <= set(params)
+    params = inspect.signature(Completions.create).parameters
+    assert {"model", "messages", "max_completion_tokens", "response_format", "store"} <= set(params)
 
 
 def _strict(schema: dict) -> bool:

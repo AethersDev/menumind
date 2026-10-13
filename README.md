@@ -54,11 +54,15 @@ conversation"; a temporary change is listed with the saved value it overrides. E
 a "How I read that" section showing the preferences it heard and the rule that decided what
 to do with them.
 
-The model provider is OpenAI by default (`gpt-6-luna` for every model call). To use
-Anthropic instead, set `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY`; its default model is
-`claude-haiku-5-5`. `EXTRACT_MODEL` and `REPLY_MODEL` override the model per step, and
-`.env.example` lists the settings. Requests to OpenAI are sent with `store=false`, so OpenAI
-doesn't keep the conversation for later retrieval.
+The model provider is OpenAI by default: `gpt-5.4-mini` through Chat Completions for every
+model call. To use Anthropic instead, set `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY`;
+its default model is `claude-haiku-5-5`. `EXTRACT_MODEL` and `REPLY_MODEL` override the model
+per step, and `.env.example` lists the settings.
+
+Requests to OpenAI are sent with `store=false`, so they aren't kept for OpenAI's distillation
+and evals products. That is separate from data sharing: if the OpenAI organization shares its
+API traffic with OpenAI (the condition for OpenAI's free daily tokens), OpenAI receives every
+message, allergies included. That suits a demo with test conversations, not real customers.
 
 **Without an API key**, `python preview.py` runs the same app with a scripted model that
 understands a handful of phrases (they print at startup). Use it for UI work.
@@ -119,9 +123,9 @@ built from verified data: the changes it saved and the top eligible dishes.
 ## Tests and evaluation
 
 ```bash
-pytest                                        # 186 tests, no API calls
+pytest                                        # 187 tests, no API calls
 python eval_extractor.py                      # extractor + reply classifier, default model
-python eval_extractor.py --model gpt-6.1-sol --price-in <USD/Mtok> --price-out <USD/Mtok>
+python eval_extractor.py --model gpt-5.4-nano --price-in <USD/Mtok> --price-out <USD/Mtok>
 ```
 
 The evaluation reports safety first, as counts: restrictions enforced and remembered, unsafe
