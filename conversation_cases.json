@@ -49,6 +49,10 @@
     {"id": "nuts-means-both", "turns": [
       {"say": "I'm allergic to nuts.", "expect": {"durable": {"allergen": ["peanut", "tree_nut"]}}}]},
 
+    {"id": "companion-allergy-tonight", "turns": [
+      {"say": "My son has a sesame allergy and he's joining me for dinner tonight.",
+       "expect": {"active": {"allergen": ["sesame"]}, "durable": {"allergen": []}}}]},
+
     {"id": "question-saves-nothing", "turns": [
       {"say": "Does the pad thai have peanuts?", "expect": {"durable": {"allergen": []}}}]},
 

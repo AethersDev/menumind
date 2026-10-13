@@ -103,8 +103,9 @@ RULES
 what the customer no longer is, emit negate with the old value.
 - Never infer a preference from a question or an order. "Does this have sesame?" is not an \
 allergy.
-- Claims are only about the customer and anyone eating with them now. Another person's \
-diet or allergy is never the customer's, even when the message compares the two.
+- Claims are about the customer and about anyone eating with them now; a companion's \
+restriction is recorded with temporal conversation. People who are not eating with the \
+customer produce no claims, even when the message compares them with the customer.
 - One claim per fact.
 
 EXAMPLES

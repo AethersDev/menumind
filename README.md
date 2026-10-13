@@ -138,7 +138,7 @@ evaluations that call it (they spend tokens; export the key first, as above):
 
 ```bash
 python eval_extractor.py                      # extractor + yes/no classifier, 32 + 18 cases
-python eval_conversations.py --repeats 3      # 13 conversations through the whole app
+python eval_conversations.py --repeats 3      # 14 conversations through the whole app
 python eval_extractor.py --model gpt-5.4-nano --price-in <USD/Mtok> --price-out <USD/Mtok>
 ```
 
@@ -148,8 +148,9 @@ Then it reports quality, latency and cost. SPEC §11 explains how the scores are
 how to choose between models.
 
 `eval_conversations.py` runs scripted conversations covering the six requirements and the
-safety rules (allergy removal needs a yes, "tonight" lasts one conversation, a question saves
-nothing, a hedged allergy is enforced and asked about). After each turn it checks what the
+safety rules (allergy removal needs a yes, "tonight" lasts one conversation, a companion's
+allergy holds for the conversation, a question saves nothing, a hedged allergy is enforced and
+asked about). After each turn it checks what the
 app did, not the model's wording: the saved and enforced profiles, the pending question, and
 the recommended dishes, each of which is also checked against the customer's allergies and
 diet. It reports unsafe recommendations first, then correct cases and turns, extraction
