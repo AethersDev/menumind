@@ -19,14 +19,10 @@ def _resp(text: str):
 
 def default_responder(brief: dict, messages: list) -> str:
     """Acknowledge changes, ask questions, recommend the top two allowed dishes."""
-    parts = []
-    if brief.get("changes"):
-        parts.append("Got it.")
-    recs = brief["recommendable"][:2]
-    if recs:
-        parts.append("Try " + " or ".join(f"[[rec:{r['id']}]]" for r in recs) + ".")
+    parts = ["Got it."] if brief.get("changes") else []
     parts += brief.get("questions_to_ask", [])
-    return " ".join(parts) or "What would you like?"
+    return json.dumps({"message": " ".join(parts) or "Here are a couple of ideas.",
+                       "recommend": [r["id"] for r in brief["recommendable"][:2]]})
 
 
 def claim(attribute, polarity="assert", subject=None, value=None, temporal="current",

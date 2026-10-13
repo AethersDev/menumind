@@ -181,6 +181,7 @@ def test_parse_normalizes_case_and_numbers():
     {"claims": [_item(attribute="diet", subject="vegan")]},     # scalar given a subject
     {"claims": [_item(attribute="diet", value="keto")]},        # value outside vocabulary
     {"claims": [_item(attribute="budget_max", value="15")]},    # number as string
+    {"claims": [_item(subject="peanut", evidence=None)]},       # evidence must be text
     {"claims": [{"attribute": "allergen"}]},                    # missing fields
     {"nope": []},
     "not an object",

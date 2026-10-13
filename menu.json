@@ -60,7 +60,7 @@
      "ingredients": ["coconut_milk", "lime", "sugar"], "allergens": [],
      "description": "Dairy-free coconut sorbet with lime zest."},
     {"id": "D4", "name": "Chili Chocolate Brownie", "category": "dessert", "price": 7.50, "diet": "vegetarian", "spice": "mild",
-     "ingredients": ["chocolate", "butter", "egg", "flour", "chili"], "allergens": ["dairy", "egg", "gluten"],
+     "ingredients": ["dark_chocolate", "butter", "egg", "flour", "chili"], "allergens": ["dairy", "egg", "gluten"],
      "description": "Fudgy brownie with a gentle chili warmth."}
   ]
 }

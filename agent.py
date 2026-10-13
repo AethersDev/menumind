@@ -3,9 +3,12 @@
     message -> extractor -> Conversation.handle (memory)
             -> pending confirmation? classify the reply -> answer
             -> recommend (hard filter in code, soft ranking)
-            -> reply model writes text with [[rec:ID]] / [[item:ID]] tokens
-            -> check_reply (retry once) -> render names and prices from the menu
-            -> deterministic fallback reply if the model still breaks the rules
+            -> reply model returns {"message", "recommend": [IDs]}
+            -> check_reply (retry once) -> render names, prices and reasons from the menu
+            -> deterministic fallback reply if the model fails or still breaks the rules
+
+If the extractor fails, the turn stops before memory: nothing is saved, no pending question
+is answered and nothing is recommended, because the unread message may state a restriction.
 
 Memory work runs under a lock, so within this process the read-decide-append sequence is
 atomic (this closes the SPEC §4 concurrency gap for a single-server deployment). Model calls
@@ -18,37 +21,57 @@ import threading
 from dataclasses import dataclass, field
 from typing import Optional
 
-from extractor import DEFAULT_MODEL, classify_reply, extract
-from memory import (Conversation, Decision, Draft, EventStore, Op, Profile, Scope,
-                    StaleConfirmation)
+import anthropic
+
+from extractor import DEFAULT_MODEL, MAX_TOKENS, classify_reply, extract
+from memory import (ATTRIBUTES, Conversation, Decision, Draft, EventStore, Kind, Op, Profile,
+                    Scope, StaleConfirmation)
 from menu import Menu
-from recommend import Recommendations, check_reply, recommend, render
+from recommend import MAX_PICKS, Recommendations, check_reply, recommend, render
 
 HISTORY_MESSAGES = 8
 RECOMMENDABLE_LIMIT = 8
+
+_EXTRACT_FAILED = ("I couldn't process your dietary preferences right now, so I haven't updated "
+                   "your profile or generated recommendations. Please try again or rephrase "
+                   "your message.")
 
 REPLY_SYSTEM = """\
 You are the ordering assistant at {restaurant}. You help one customer choose dishes from \
 this menu. Each turn you receive the customer's message and a JSON briefing from the app.
 
+Answer in JSON. "message" is what you say to the customer. "recommend" lists the IDs of the \
+dishes you recommend this turn, or is empty when they don't want a suggestion. The app shows \
+each recommended dish under your message with its name, price and reasons.
+
 RULES
-1. Refer to dishes only with tokens. Use [[rec:ID]] to recommend a dish, and only with IDs \
-from "recommendable" or "over_budget". Use [[item:ID]] to talk about any other menu dish, for \
-example to answer a question about it. Never write a dish name, a price, or "$" yourself; the \
-app replaces each token with the dish's name and price.
-2. Use only facts from "menu": ingredients, allergens, spice, diet, description. Never invent \
+1. Recommend at most three dishes, only with IDs from "recommendable" or "over_budget". \
+Respect any category the customer asks for (starter, main, dessert). If nothing fits, \
+recommend nothing and say which preference rules out the rest.
+2. In "message", never write a dish name, a price, or "$". To talk about a specific dish, for \
+example to answer a question about it, write [[item:ID]]; the app replaces it with the dish's \
+name and price.
+3. Use only facts from "menu": ingredients, allergens, spice, diet, description. Never invent \
 dishes, ingredients, prices, discounts, or availability. If something is not on the menu, \
 say so.
-3. Never recommend a dish listed in "unsuitable". If the customer asks about one, mention it \
+4. Never recommend a dish listed in "unsuitable". If the customer asks about one, mention it \
 with [[item:ID]]; the app adds the warning.
-4. If "questions_to_ask" is not empty, ask those questions, keeping their meaning.
-5. If "changes" is not empty, acknowledge them briefly in plain words.
-6. When the customer wants a suggestion, recommend one to three dishes and say why, using \
-their "reasons". Respect any category they ask for (starter, main, dessert). If nothing fits, \
-say which preference rules out the rest.
-7. If "notice" is present, follow it.
-8. Be brief: at most five sentences, plain text, no headings.
+5. "profile" has what is enforced now ("enforced_now") and what is saved for future visits \
+("saved"). Where they differ, the difference holds only for this conversation.
+6. If "questions_to_ask" is not empty, ask those questions, keeping their meaning.
+7. If "changes" is not empty, acknowledge them briefly in plain words.
+8. If "notice" is present, pass it on to the customer.
+9. Be brief: at most five sentences, plain text, no headings. Don't repeat what the app \
+lists for the recommended dishes.
 """
+
+TURN_SCHEMA = {
+    "type": "object",
+    "properties": {"message": {"type": "string"},
+                   "recommend": {"type": "array", "items": {"type": "string"}}},
+    "required": ["message", "recommend"],
+    "additionalProperties": False,
+}
 
 
 class ModelUnavailable(RuntimeError):
@@ -93,29 +116,37 @@ def describe(d: Draft) -> str:
     return text + _scope_note(d)
 
 
-def _lines(state: dict) -> list[str]:
-    out = []
-    if state["diet"] != "omnivore":
-        out.append(f"Diet: {state['diet']}")
-    if state["allergen"]:
-        out.append("Allergies: " + ", ".join(sorted(a.replace("_", " ") for a in state["allergen"])))
-    if state["spice_tolerance"] is not None:
-        out.append(f"Spice: {state['spice_tolerance']}")
-    if state["diet_lean"] is not None:
-        out.append(f"Leaning {state['diet_lean']}")
-    if state["budget_max"] is not None:
-        out.append(f"Budget: up to ${state['budget_max']:.2f}")
-    if state["disliked_ingredient"]:
-        out.append("Dislikes: " + ", ".join(sorted(w.replace("_", " ") for w in state["disliked_ingredient"])))
-    if state["liked_ingredient"]:
-        out.append("Likes: " + ", ".join(sorted(w.replace("_", " ") for w in state["liked_ingredient"])))
-    return out
+_LABELS = {"diet": "Diet", "allergen": "Allergies", "spice_tolerance": "Spice",
+           "diet_lean": "Leaning", "budget_max": "Budget", "disliked_ingredient": "Dislikes",
+           "liked_ingredient": "Likes"}
+
+
+def _show(attribute: str, value) -> str:
+    if isinstance(value, frozenset):
+        return ", ".join(sorted(v.replace("_", " ") for v in value)) or "none"
+    if value is None:
+        return "not set"
+    return f"up to ${value:.2f}" if attribute == "budget_max" else value
+
+
+def _unset(attribute: str):
+    spec = ATTRIBUTES[attribute]
+    return frozenset() if spec.kind is Kind.SET else spec.default
 
 
 def profile_view(p: Profile) -> dict:
-    remembered = _lines(p.durable)
-    return {"remembered": remembered,
-            "this_conversation": [x for x in _lines(p.active) if x not in remembered]}
+    """Display lines: what is saved, and every value this conversation changes, shown with the
+    saved value it overrides. Computed from the profiles, so a loosening shows too."""
+    return {
+        "remembered": [f"{_LABELS[a]}: {_show(a, p.durable[a])}"
+                       for a in ATTRIBUTES if p.durable[a] != _unset(a)],
+        "this_conversation": [f"{_LABELS[a]}: {_show(a, p.active[a])} (saved: {_show(a, p.durable[a])})"
+                              for a in ATTRIBUTES if p.active[a] != p.durable[a]],
+    }
+
+
+def _plain(state: dict) -> dict:
+    return {a: sorted(v) if isinstance(v, frozenset) else v for a, v in state.items()}
 
 
 # ------------------------------------------------------------------------------ agent
@@ -163,8 +194,12 @@ class Agent:
         with self._lock:
             state = self._state(user_id, conversation_id)
             conv = state.conv
+            if ext.error is not None:  # fail closed: no change, no answer, no recommendation
+                pending = conv.pending
+                return TurnResult(_EXTRACT_FAILED, [], [], pending.question if pending else None,
+                                  profile_view(conv.profile()), trace)
             before = conv.pending.proposal_id if conv.pending else None
-            decisions: list[Decision] = conv.handle(ext.claims) if ext.error is None else []
+            decisions: list[Decision] = conv.handle(ext.claims)
             still_pending = conv.pending if conv.pending and conv.pending.proposal_id == before else None
 
         changes = [describe(d) for dec in decisions for d in dec.events]
@@ -172,10 +207,6 @@ class Agent:
         trace["decisions"] = [{"rule": d.rule, "outcome": d.outcome, "reason": d.reason}
                               for d in decisions]
         notice = None
-        if ext.error is not None:
-            notice = ("The app could not read a preference from the customer's message. If the "
-                      "message seems to state a preference, ask them to rephrase it; otherwise "
-                      "answer normally.")
 
         if still_pending is not None:  # §7: the reply answers the earlier question
             verdict = classify_reply(still_pending.question, text, client=self.client,
@@ -198,12 +229,14 @@ class Agent:
         recs = recommend(self.menu, profile.active)
         question = questions[-1] if questions else None
 
-        raw, errors, fallback = self._reply(state, text, profile, recs, changes, questions, notice)
-        reply, mentioned = render(raw, self.menu, recs, profile.active["budget_max"])
+        message, picks, errors, fallback = self._reply(state, text, profile, recs, changes,
+                                                       questions, notice)
+        reply, mentioned = render(message, picks, self.menu, recs, profile.active["budget_max"])
         trace.update(reply_errors=errors, fallback=fallback)
         with self._lock:
             state.history += [{"role": "user", "content": text},
-                              {"role": "assistant", "content": raw}]
+                              {"role": "assistant",
+                               "content": json.dumps({"message": message, "recommend": picks})}]
             state.history = state.history[-HISTORY_MESSAGES:]
         return TurnResult(reply, mentioned, changes, question, profile_view(profile), trace)
 
@@ -216,7 +249,7 @@ class Agent:
                     "spice": c.item.spice, "diet": c.item.diet, "reasons": list(c.reasons)}
         brief = {
             "customer_message": text,
-            "profile": profile_view(profile),
+            "profile": {"enforced_now": _plain(profile.active), "saved": _plain(profile.durable)},
             "changes": changes,
             "questions_to_ask": questions,
             "recommendable": [cand(c) for c in recs.candidates[:RECOMMENDABLE_LIMIT]],
@@ -230,43 +263,62 @@ class Agent:
         return json.dumps(brief)
 
     def _call(self, messages: list) -> str:
-        resp = self.client.messages.create(model=self.reply_model, max_tokens=2048,
-                                           system=self._system, messages=messages)
+        resp = self.client.messages.create(
+            model=self.reply_model, max_tokens=MAX_TOKENS, system=self._system,
+            messages=messages, output_config={"format": {"type": "json_schema",
+                                                         "schema": TURN_SCHEMA}})
         return "".join(b.text for b in resp.content if getattr(b, "type", None) == "text").strip()
 
     def _reply(self, state: _ConvState, text, profile, recs, changes, questions, notice):
+        """(message, picks, errors, fallback): two attempts by the model, then a reply built
+        from verified data. Memory is already settled, so a failure here only costs prose."""
         messages = state.history + [{"role": "user", "content": self._briefing(
             text, profile, recs, changes, questions, notice)}]
         errors: list = []
-        for attempt in range(2):
+        for _ in range(2):
             try:
                 raw = self._call(messages)
-            except Exception as e:  # model unavailable: fall back
+            except anthropic.APIError as e:
                 errors.append(f"{type(e).__name__}: {e}")
                 break
-            problems = check_reply(raw, self.menu, recs)
-            if not problems and raw:
-                return raw, errors, False
-            errors.append(problems or ["empty reply"])
+            try:
+                message, picks = _parse(raw)
+            except (ValueError, KeyError, TypeError) as e:  # not the requested JSON shape
+                problems = [f"unreadable reply ({type(e).__name__}: {e})"]
+            else:
+                problems = check_reply(message, picks, self.menu, recs)
+                if not message.strip():
+                    problems.append("empty message")
+            if not problems:
+                return message, picks, errors, False
+            errors.append(problems)
             messages = messages + [
                 {"role": "assistant", "content": raw or "(empty)"},
-                {"role": "user", "content": "That reply broke these rules: " + "; ".join(
-                    problems or ["empty reply"]) + ". Rewrite it following the rules."}]
-        return fallback_reply(recs, changes, questions), errors, True
+                {"role": "user", "content": "That reply broke these rules: " + "; ".join(problems)
+                 + ". Rewrite it following the rules."}]
+        return (*fallback_reply(recs, changes, questions, notice), errors, True)
 
 
-def fallback_reply(recs: Recommendations, changes: list, questions: list) -> str:
-    """A reply built only from verified data, used when the model can't produce a valid one."""
-    parts = []
+def _parse(raw: str) -> tuple[str, list]:
+    data = json.loads(raw)
+    message, picks = data["message"], data["recommend"]
+    if not (isinstance(message, str) and isinstance(picks, list)
+            and all(isinstance(p, str) for p in picks)):
+        raise TypeError("message must be text and recommend a list of IDs")
+    return message, picks
+
+
+def fallback_reply(recs: Recommendations, changes: list, questions: list,
+                   notice: Optional[str]) -> tuple[str, list]:
+    """(message, picks) built only from verified data, for when the model can't produce a
+    valid reply."""
+    parts = [notice] if notice else []
     if changes:
         parts.append("Noted: " + "; ".join(changes) + ".")
-    if recs.candidates:
-        parts.append("A few options that fit: " + ", ".join(
-            f"[[rec:{c.item.id}]]" for c in recs.candidates[:3]) + ".")
-    else:
-        parts.append("Nothing on the menu fits every preference you've given me.")
     parts += questions
-    return " ".join(parts)
+    parts.append("A few options that fit:" if recs.candidates
+                 else "Nothing on the menu fits every preference you've given me.")
+    return " ".join(parts), [c.item.id for c in recs.candidates[:MAX_PICKS]]
 
 
 def _drafts(events) -> list[Draft]:

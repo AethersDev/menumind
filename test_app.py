@@ -1,26 +1,40 @@
 """Menu, recommender, agent and server tests. No model is called: FakeLLM scripts it."""
 import itertools
+import json
 import os
 import re
+from types import SimpleNamespace
 
 os.environ["MENUMIND_NO_APP"] = "1"  # don't build the module-level app on import
 
+import anthropic
+import httpx2
 import pytest
 from fastapi.testclient import TestClient
 
 from agent import Agent
 from fake_llm import FakeLLM, claim
 from memory import ALLERGENS, DIET_ORDER, EventStore, fold
-from menu import MenuError, load_menu, parse_menu
+from menu import HOUSE_RECIPES, MenuError, load_menu, parse_menu
 from recommend import check_reply, hard_violations, recommend, render
 from server import create_app
 
 MENU = load_menu()
 EMPTY = fold([], user_id="u", session_id="s").active
+FAILED_CLOSED = "haven't updated your profile or generated recommendations"
 
 
 def active(**kw):
     return {**EMPTY, **kw}
+
+
+def says(message, *picks):
+    """A reply-model answer in the structured format."""
+    return json.dumps({"message": message, "recommend": list(picks)})
+
+
+def api_down(*_, **__):
+    raise anthropic.APIConnectionError(request=httpx2.Request("POST", "https://api.anthropic.com"))
 
 
 # ========================================================================= menu
@@ -52,10 +66,21 @@ def _menu_with(**override):
     ({"allergens": ["nuts"]}, "unknown allergens"),
     ({"spice": "extra hot"}, "spice"),
     ({"ingredients": ["Soy Sauce"], "allergens": ["soy", "gluten"]}, "non-canonical ingredient"),
+    ({"ingredients": ["rice", "shrimp_paste"]}, "unclassified ingredient 'shrimp_paste'"),
+    ({"allergens": ["peanut"]}, "lists allergens ['peanut'] that no ingredient carries"),
+    ({"diet": "vegetarian"}, "labeled vegetarian but its ingredients are vegan"),
 ])
 def test_inconsistent_menu_does_not_load(override, message):
     with pytest.raises(MenuError, match=re.escape(message)):
         parse_menu(_menu_with(**override))
+
+
+def test_compound_ingredient_is_judged_by_its_recipe(monkeypatch):
+    monkeypatch.setitem(HOUSE_RECIPES, "test_paste", ("garlic", "shrimp"))
+    with pytest.raises(MenuError) as e:
+        parse_menu(_menu_with(ingredients=["rice", "test_paste"]))
+    assert "test_paste carries ['shellfish']" in str(e.value)
+    assert "labeled vegan but contains test_paste" in str(e.value)
 
 
 def test_duplicate_ids_rejected():
@@ -95,26 +120,30 @@ def test_budget_splits_candidates():
     assert all(c.item.price > 10 for c in recs.over_budget)
 
 
-@pytest.mark.parametrize("raw, problem", [
-    ("Try [[rec:Z9]].", "unknown item id Z9"),
-    ("Try [[rec:S4]].", "recommended S4, which the customer must avoid"),
-    ("Try [[rec:M3]], only $12.", "typed a price"),
-    ("Try the Spicy Chicken Bowl.", "typed the dish name"),
+@pytest.mark.parametrize("message, picks, problem", [
+    ("Try this.", ["Z9"], "unknown item id Z9"),
+    ("Try this.", ["S4"], "recommended S4, which the customer must avoid"),
+    ("Try [[rec:M9]].", [], "put recommendations in"),
+    ("Try [[item:Z9]].", [], "unknown item id Z9"),
+    ("Only $12.", [], "typed a price"),
+    ("Try the Spicy Chicken Bowl.", [], "typed the dish name"),
+    ("Options.", ["M9", "M2", "D3", "S1"], "at most 3"),
+    ("Options.", ["M9", "M9"], "at most 3"),
 ])
-def test_check_reply_rejects(raw, problem):
+def test_check_reply_rejects(message, picks, problem):
     recs = recommend(MENU, active(allergen=frozenset({"peanut"})))
-    assert any(problem in e for e in check_reply(raw, MENU, recs))
+    assert any(problem in e for e in check_reply(message, picks, MENU, recs))
 
 
 def test_render_uses_menu_names_prices_and_warnings():
     a = active(allergen=frozenset({"peanut"}), budget_max=10)
     recs = recommend(MENU, a)
-    raw = "Try [[rec:M9]]. The [[item:S4]] has peanut."
-    assert check_reply(raw, MENU, recs) == []
-    text, mentioned = render(raw, MENU, recs, a["budget_max"])
-    assert "**Chana Masala** ($12.00) [over your $10.00 budget]" in text
-    assert "**Chicken Satay** ($9.00) [not suitable for you: contains peanut]" in text
-    assert [m["id"] for m in mentioned] == ["M9", "S4"]
+    message = "The [[item:S4]] has peanut."
+    assert check_reply(message, ["M9"], MENU, recs) == []
+    text, mentioned = render(message, ["M9"], MENU, recs, a["budget_max"])
+    assert text == ("The **Chicken Satay** ($9.00) [not suitable for you: contains peanut] has peanut."
+                    "\n\n- **Chana Masala** ($12.00) [over your $10.00 budget]")
+    assert [m["id"] for m in mentioned] == ["S4", "M9"]
 
 
 # ======================================================================== agent
@@ -126,7 +155,13 @@ LLM_CLAIMS = {
     "I'm vegetarian.": [claim("diet", value="vegetarian")],
     "I'm allergic to peanuts.": [claim("allergen", subject="peanut")],
     "I'm no longer allergic to peanuts.": [claim("allergen", "negate", subject="peanut")],
+    "I'm allergic to soy.": [claim("allergen", subject="soy")],
+    "Meat is fine tonight.": [claim("diet", value="omnivore", temporal="conversation")],
+    "Vegetarian, sesame allergy, no mushrooms.": [
+        claim("diet", value="vegetarian"), claim("allergen", subject="sesame"),
+        {**claim("disliked_ingredient", subject="mushroom"), "evidence": None}],
     "Something is wrong with me.": "invalid",
+    "yes, sure": "invalid",
 }
 
 
@@ -154,7 +189,8 @@ def test_memory_survives_new_conversation_and_restart(tmp_path):
     fresh, fake = make_agent(tmp_path)  # new process, same database
     assert fresh.profile("alice", "c2").durable["spice_tolerance"] == "hot"
     fresh.turn("alice", "c2", "What do you recommend?")
-    assert fake.briefings[-1]["profile"]["remembered"] == ["Spice: hot", "Dislikes: mushroom"]
+    saved = fake.briefings[-1]["profile"]["saved"]
+    assert (saved["spice_tolerance"], saved["disliked_ingredient"]) == ("hot", ["mushroom"])
 
 
 def test_preference_update_changes_recommendations(tmp_path):
@@ -170,7 +206,7 @@ def test_users_are_isolated(tmp_path):
     agent.turn("alice", "c1", "I'm allergic to peanuts.")
     agent.turn("bob", "c1", "What do you recommend?")  # same conversation id, other user
     bob = fake.briefings[-1]
-    assert bob["profile"] == {"remembered": [], "this_conversation": []}
+    assert bob["profile"]["saved"]["allergen"] == bob["profile"]["enforced_now"]["allergen"] == []
     assert bob["unsuitable"] == []  # alice's peanut allergy excludes nothing for bob
 
 
@@ -195,8 +231,18 @@ def test_unclear_answer_changes_nothing_and_asks_again(tmp_path):
     assert "Allergies: peanut" in r.profile["remembered"]
 
 
+def test_recommended_dishes_are_rendered_by_code(tmp_path):
+    """The model picks dishes by ID; code writes each one's menu name, price and reasons."""
+    agent, _ = make_agent(tmp_path, responder=lambda b, m: says("Two good fits.", "M2", "D3"))
+    r = agent.turn("alice", "c1", SPICY)
+    assert r.reply == ("Two good fits.\n\n"
+                       "- **Green Curry with Tofu** ($14.00): matches your spice level (hot)\n"
+                       "- **Coconut Lime Sorbet** ($6.00)")
+    assert [(m["id"], m["kind"]) for m in r.mentioned] == [("M2", "rec"), ("D3", "rec")]
+
+
 def test_unsafe_recommendation_is_rejected_then_rewritten(tmp_path):
-    attempts = iter(["You'll love [[rec:S4]].", "Try [[rec:M9]]."])
+    attempts = iter([says("You'll love this.", "S4"), says("Try this instead.", "M9")])
     agent, fake = make_agent(tmp_path, responder=lambda b, m: next(attempts))
     r = agent.turn("alice", "c1", "I'm allergic to peanuts.")
     assert fake.calls["respond"] == 2 and not r.trace["fallback"]
@@ -205,18 +251,77 @@ def test_unsafe_recommendation_is_rejected_then_rewritten(tmp_path):
 
 
 def test_rule_breaking_model_falls_back_to_menu_data(tmp_path):
-    agent, fake = make_agent(tmp_path, responder=lambda b, m: "The Lobster Roll is $30.")
+    agent, fake = make_agent(tmp_path, responder=lambda b, m: says("The Lobster Roll is $30."))
     r = agent.turn("alice", "c1", "I'm vegetarian.")
     assert r.trace["fallback"] and fake.calls["respond"] == 2
     assert "$30" not in r.reply and r.mentioned
     assert all(MENU.get(m["id"]).diet in ("vegetarian", "vegan") for m in r.mentioned)
 
 
-def test_unreadable_preference_asks_to_rephrase(tmp_path):
+def test_unreadable_preference_fails_closed(tmp_path):
     agent, fake = make_agent(tmp_path)
     r = agent.turn("alice", "c1", "Something is wrong with me.")
-    assert r.trace["extract_error"] and "rephrase" in fake.briefings[-1]["notice"]
-    assert r.profile["remembered"] == []
+    assert r.trace["extract_error"] and FAILED_CLOSED in r.reply
+    assert r.mentioned == [] and r.profile["remembered"] == [] and fake.calls["respond"] == 0
+
+
+def test_extraction_outage_recommends_nothing(tmp_path):
+    """Audit #1, case A: with the API down a stated allergy can't be read, so nothing is
+    recommended (before, the fallback offered edamame to a soy-allergic customer)."""
+    down = SimpleNamespace(messages=SimpleNamespace(create=api_down))
+    r = Agent(EventStore(str(tmp_path / "db.sqlite")), MENU, down).turn(
+        "alice", "c1", "I'm allergic to soy.")
+    assert FAILED_CLOSED in r.reply and r.mentioned == [] and r.changes == []
+
+
+def test_extraction_failure_leaves_a_pending_question_open(tmp_path):
+    """Case A with a question pending: an unread reply might restate the allergy (SPEC §7
+    step 1), so it is not classified as an answer."""
+    agent, fake = make_agent(tmp_path, replies={"yes, sure": "yes"})
+    agent.turn("alice", "c1", "I'm allergic to peanuts.")
+    agent.turn("alice", "c1", "I'm no longer allergic to peanuts.")
+    r = agent.turn("alice", "c1", "yes, sure")
+    assert "Allergies: peanut" in r.profile["remembered"] and "peanut" in r.question
+    assert fake.calls["classify"] == 0
+
+
+def test_narration_outage_falls_back_to_grounded_dishes(tmp_path):
+    """Audit #1, case B: the allergy is saved and only the reply model fails, so the reply is
+    built from verified data and avoids soy."""
+    agent, _ = make_agent(tmp_path, responder=api_down)
+    r = agent.turn("alice", "c1", "I'm allergic to soy.")
+    assert r.trace["fallback"] and "Noted: avoiding soy (allergy)." in r.reply
+    assert r.mentioned and all("soy" not in MENU.get(m["id"]).allergens for m in r.mentioned)
+
+
+def test_fallback_keeps_the_stale_confirmation_notice(tmp_path):
+    agent, _ = make_agent(tmp_path, replies={"yes": "yes"}, responder=api_down)
+    agent.turn("alice", "c1", "I'm allergic to peanuts.")
+    agent.turn("alice", "c1", "I'm no longer allergic to peanuts.")
+    agent.turn("alice", "c2", "I'm no longer allergic to peanuts.")
+    agent.turn("alice", "c2", "yes")  # removed from the second conversation
+    r = agent.turn("alice", "c1", "yes")
+    assert "earlier question no longer applies" in r.reply
+
+
+def test_temporary_loosening_is_shown_and_briefed(tmp_path):
+    """Audit #3: 'meat is fine tonight' over a saved vegetarian diet is shown as a change,
+    and the reply model gets the enforced profile, not display lines."""
+    agent, fake = make_agent(tmp_path)
+    agent.turn("alice", "c1", "I'm vegetarian.")
+    r = agent.turn("alice", "c1", "Meat is fine tonight.")
+    assert r.profile == {"remembered": ["Diet: vegetarian"],
+                         "this_conversation": ["Diet: omnivore (saved: vegetarian)"]}
+    brief = fake.briefings[-1]["profile"]
+    assert (brief["enforced_now"]["diet"], brief["saved"]["diet"]) == ("omnivore", "vegetarian")
+
+
+def test_invalid_claim_rejects_the_whole_message(tmp_path):
+    """A bad third claim used to fail after the first two were saved. The whole batch is
+    validated before anything is applied."""
+    agent, _ = make_agent(tmp_path)
+    r = agent.turn("alice", "c1", "Vegetarian, sesame allergy, no mushrooms.")
+    assert FAILED_CLOSED in r.reply and r.profile["remembered"] == []
 
 
 # ======================================================================= server

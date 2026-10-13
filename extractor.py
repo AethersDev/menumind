@@ -115,7 +115,10 @@ _ENUM_FIELDS = ("attribute", "polarity", "temporal", "modality")
 
 
 def parse_claims(payload: Any) -> Extraction:
-    """Validate a model payload against the memory vocabulary. Pure."""
+    """Validate a model payload against the memory vocabulary. Pure.
+
+    The payload is accepted or rejected whole, so one bad claim never lets the others
+    through: a message is applied completely or not at all."""
     try:
         claims = []
         for item in payload["claims"]:
@@ -130,6 +133,8 @@ def parse_claims(payload: Any) -> Extraction:
             if spec.numeric and isinstance(v, float) and v.is_integer():
                 d["value"] = int(v)
             c = Claim.from_dict(d)
+            if not isinstance(c.evidence, str):  # the event log requires it (NOT NULL)
+                raise TypeError("evidence must be text")
             _check_value(c.attribute, c.value, required=True)
             claims.append(replace(c, subject=canonical_subject(c.attribute, c.subject)))
         return Extraction(claims, raw=payload)

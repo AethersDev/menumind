@@ -1,15 +1,17 @@
 """Recommendation and grounded rendering.
 
 Hard constraints (allergens, diet) filter in code; the model never sees a violating dish as a
-recommendable option. Soft preferences rank what is left. The reply model refers to dishes
-only by ID tokens, and code fills in names and prices from the menu:
+recommendable option. Soft preferences rank what is left. The reply model returns a message
+and, separately, the IDs of the dishes it recommends. Code writes every recommended dish
+(name, price, the ranking's reasons) and accepts only IDs from the eligible set. In the
+message, the model may mention a dish only as a token:
 
-    [[rec:M3]]   a recommendation; must be a dish that passes the user's hard constraints
     [[item:M5]]  any dish, e.g. when answering a question; a dish the user must avoid is
                  rendered with a warning written by code
 
-check_reply() rejects unknown IDs, recommendations that violate a hard constraint, and any
-dish name or price typed outside a token.
+check_reply() rejects ineligible or unknown IDs and any full dish name or price typed in the
+message. It cannot catch a dish described in other words ("the noodles with shrimp"), so the
+message is held to the prompt there, not checked. Recommendations never depend on the message.
 """
 from __future__ import annotations
 
@@ -90,17 +92,26 @@ def recommend(menu: Menu, active: dict) -> Recommendations:
 
 TOKEN = re.compile(r"\[\[(rec|item):([A-Za-z0-9_-]+)\]\]")
 TYPED_PRICE = re.compile(r"\$\s?\d")
+MAX_PICKS = 3
 
 
-def check_reply(raw: str, menu: Menu, recs: Recommendations) -> list[str]:
+def check_reply(message: str, picks: list, menu: Menu, recs: Recommendations) -> list[str]:
     errors = []
-    for kind, item_id in TOKEN.findall(raw):
+    if len(picks) > MAX_PICKS or len(set(picks)) != len(picks):
+        errors.append(f"recommend at most {MAX_PICKS} different dishes")
+    allowed = recs.allowed_ids()
+    for item_id in picks:
         if menu.get(item_id) is None:
             errors.append(f"unknown item id {item_id}")
-        elif kind == "rec" and item_id not in recs.allowed_ids():
-            why = ", ".join(recs.excluded.get(item_id, ["not allowed"]))
+        elif item_id not in allowed:
+            why = ", ".join(recs.excluded[item_id])
             errors.append(f"recommended {item_id}, which the customer must avoid ({why})")
-    text = TOKEN.sub(" ", raw)
+    for kind, item_id in TOKEN.findall(message):
+        if kind == "rec":
+            errors.append(f"[[rec:{item_id}]] in the message; put recommendations in \"recommend\"")
+        elif menu.get(item_id) is None:
+            errors.append(f"unknown item id {item_id}")
+    text = TOKEN.sub(" ", message)
     if TYPED_PRICE.search(text):
         errors.append("typed a price; prices must come from tokens")
     lowered = text.lower()
@@ -114,24 +125,29 @@ def _price(p: float) -> str:
     return f"${p:.2f}"
 
 
-def render(raw: str, menu: Menu, recs: Recommendations, budget) -> tuple[str, list[dict]]:
-    """Replace tokens with names and prices from the menu. Call only after check_reply()."""
+def render(message: str, picks: list, menu: Menu, recs: Recommendations,
+           budget) -> tuple[str, list[dict]]:
+    """Replace tokens with names and prices from the menu, then list the recommended dishes
+    with their reasons. Call only after check_reply()."""
     mentioned: list[dict] = []
-    over_ids = {c.item.id for c in recs.over_budget}
+    over_ids = {c.item.id for c in recs.over_budget}  # non-empty only when budget is set
+    reasons = {c.item.id: c.reasons for c in recs.candidates + recs.over_budget}
 
-    def sub(m: re.Match) -> str:
-        kind, item_id = m.group(1), m.group(2)
+    def label(kind: str, item_id: str) -> str:
         item = menu.get(item_id)
         warnings = list(recs.excluded.get(item_id, []))
-        if item_id in over_ids and budget is not None:
+        if item_id in over_ids:
             warnings.append(f"over your {_price(budget)} budget")
         mentioned.append({"id": item.id, "name": item.name, "price": item.price,
                           "kind": kind, "warnings": warnings})
-        label = f"**{item.name}** ({_price(item.price)})"
+        text = f"**{item.name}** ({_price(item.price)})"
         if item_id in recs.excluded:
-            return f"{label} [not suitable for you: {', '.join(warnings)}]"
+            return f"{text} [not suitable for you: {', '.join(warnings)}]"
         if warnings:
-            return f"{label} [{', '.join(warnings)}]"
-        return label
+            return f"{text} [{', '.join(warnings)}]"
+        return text
 
-    return TOKEN.sub(sub, raw), mentioned
+    text = TOKEN.sub(lambda m: label(m.group(1), m.group(2)), message)
+    lines = [f"- {label('rec', i)}" + (f": {'; '.join(reasons[i])}" if reasons[i] else "")
+             for i in picks]
+    return ("\n\n".join([text, "\n".join(lines)]) if lines else text), mentioned

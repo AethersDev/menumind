@@ -21,8 +21,9 @@ restaurant, Lantern Street Kitchen.
   an append-only event; the current profile is computed from the log.
 - **A deterministic recommendation engine selects eligible menu items.** Allergies and diet
   filter the menu; tastes and budget rank what is left.
-- **A grounded response layer presents verified menu information.** The reply refers to
-  dishes only by ID, and code fills in names and prices from the menu.
+- **A grounded response layer presents verified menu information.** The model returns the
+  dishes it recommends as IDs, separately from its message. Code accepts only IDs from the
+  eligible set and writes each dish's name, price and reasons from the menu.
 
 This is not a multi-agent system. The model is called for single, bounded tasks with fixed
 output formats; it has no tools, takes no actions, and never decides what is stored or
@@ -47,8 +48,9 @@ open http://127.0.0.1:8000
 
 Create an account with a username and a 4 to 12 digit PIN, then chat. The order ticket on
 the right shows what MenuMind remembers, split into "every visit" and "just this
-conversation". Each reply has a "How I read that" section showing the preferences it heard
-and the rule that decided what to do with them.
+conversation"; a temporary change is listed with the saved value it overrides. Each reply has
+a "How I read that" section showing the preferences it heard and the rule that decided what
+to do with them.
 
 **Without an API key**, `python preview.py` runs the same app with a scripted model that
 understands a handful of phrases (they print at startup). Use it for UI work.
@@ -78,13 +80,16 @@ message
   -> decide() + Conversation (code)         what is authorized: apply, ask to confirm, ask to clarify, ignore
   -> event log in SQLite (code)             append-only, per user; the profile is computed from it
   -> recommend() (code)                     allergies and diet filter the menu; tastes rank what's left
-  -> reply model                            writes text that names dishes only as [[rec:ID]] / [[item:ID]]
-  -> check_reply() + render() (code)        rejects unknown or unsafe dishes and typed prices,
-                                            then fills in names and prices from the menu
+  -> reply model (structured output)        {"message": text, "recommend": [dish IDs]}
+  -> check_reply() + render() (code)        rejects ineligible or unknown IDs, typed names and
+                                            prices, then writes each recommended dish (name,
+                                            price, reasons) from the menu
 ```
 
-If the reply model breaks a rule twice in a row, the app answers with a reply built only from
-menu data.
+If the extractor fails, the app stops there: nothing is saved, no pending question is
+answered, and nothing is recommended, because the unread message may have stated an allergy.
+If only the reply model fails, or breaks a rule twice in a row, the app answers with a reply
+built from verified data: the changes it saved and the top eligible dishes.
 
 ## Files
 
@@ -92,7 +97,7 @@ menu data.
 |---|---|
 | `memory.py` | Preference model, decision rules, event log, profile fold, confirmation lifecycle |
 | `extractor.py` | Model calls: reading preferences from a message, classifying yes/no answers |
-| `menu.json`, `menu.py` | The menu (19 dishes), validated on load against ingredient allergens and diets |
+| `menu.json`, `menu.py` | The menu (19 dishes). Every ingredient is classified (compound ones through declared house recipes), and each dish's allergens and diet must match its ingredients |
 | `recommend.py` | Hard filtering, soft ranking, grounded rendering and reply checks |
 | `agent.py` | One chat turn end to end |
 | `accounts.py`, `server.py` | Username and PIN sign-in, HTTP API |
@@ -105,7 +110,7 @@ menu data.
 ## Tests and evaluation
 
 ```bash
-pytest                                        # 136 tests, no API calls
+pytest                                        # 152 tests, no API calls
 python eval_extractor.py                      # extractor + reply classifier, default model
 python eval_extractor.py --model claude-sonnet-5-5 --price-in <USD/Mtok> --price-out <USD/Mtok>
 ```
@@ -128,13 +133,17 @@ builds from a Dockerfile and offers a persistent disk, for example Render, Fly.i
 
 ## Limitations, stated plainly
 
-- **Allergen data is only as good as `menu.json`.** The loader checks ingredients against
-  known allergens, but cross-contamination is not modeled. Tell customers with severe
-  allergies to confirm with staff.
-- **Free text can still be wrong.** Dish names and prices can't be made up, because code
-  inserts them. But the model's own sentences could still describe a dish inaccurately.
-  Ingredient and allergen facts in the briefing come from the menu, and the prompt forbids
-  anything else; this part is not mechanically checked.
+- **Allergen and diet labels describe declared ingredients, not a real kitchen.** The loader
+  rejects unclassified ingredients and labels that disagree with them. Compound ingredients
+  (green curry paste, chili-garlic oil, dark chocolate, kombu broth) are judged by the house
+  recipes declared in `menu.py`, not by every commercial version. Cross-contact is not
+  modeled, so the app makes claims about declared recipes, not medical allergy safety. Tell
+  customers with severe allergies to confirm with staff.
+- **The model's message is not fully checked.** Recommended dishes are written by code from
+  the eligible set, so the recommendation list never contains an ineligible dish. The
+  message itself is checked for
+  full dish names and typed prices, but a dish described in other words ("the shrimp
+  noodles") gets past the check; only the prompt forbids it.
 - **"Tonight" means "this conversation".** Returning in a new conversation the same evening
   drops a temporary preference (SPEC §9).
 - **One server process.** Memory updates are serialized by a lock inside the process, so

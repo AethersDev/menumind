@@ -1,9 +1,12 @@
 """Menu loading and validation.
 
 The menu is data, and the safety of every recommendation depends on its allergen and diet
-fields being right. So the loader checks them against the ingredient lists: an ingredient
-known to carry an allergen must list it, and an ingredient known to rule out a diet must not
-be in a dish labeled with that diet. A menu that fails these checks does not load.
+fields being right. So the loader derives them from the ingredients and rejects any dish
+whose labels disagree. The ingredient vocabulary is closed: an ingredient that is not
+classified fails the load instead of passing as allergen-free and vegan.
+
+These checks cover declared ingredients only. They say nothing about cross-contact in a real
+kitchen.
 """
 from __future__ import annotations
 
@@ -16,31 +19,41 @@ from memory import ALLERGENS, DIET_ORDER, SPICE_ORDER
 CATEGORIES = ("starter", "main", "dessert")
 DEFAULT_PATH = Path(__file__).parent / "menu.json"
 
-# Ingredient -> allergens it always carries. Extend when the menu gains ingredients.
-ALLERGEN_SOURCES: dict[str, frozenset] = {k: frozenset(v) for k, v in {
-    "peanut": {"peanut"}, "peanut_sauce": {"peanut"},
-    "cashew": {"tree_nut"}, "almond": {"tree_nut"}, "walnut": {"tree_nut"},
-    "shrimp": {"shellfish"}, "crab": {"shellfish"},
-    "fish_sauce": {"fish"}, "salmon": {"fish"},
-    "egg": {"egg"},
-    "butter": {"dairy"}, "cream": {"dairy"}, "cream_cheese": {"dairy"}, "paneer": {"dairy"},
-    "milk": {"dairy"},
-    "sesame_seed": {"sesame"}, "sesame_oil": {"sesame"},
-    "tofu": {"soy"}, "edamame": {"soy"},
-    "soy_sauce": {"soy", "gluten"}, "teriyaki_sauce": {"soy", "gluten"},
-    "gochujang": {"soy", "gluten"}, "hoisin": {"soy", "gluten"},
-    "wheat_wrapper": {"gluten"}, "bao_bun": {"gluten"}, "udon_noodle": {"gluten"},
-    "flour": {"gluten"}, "graham_cracker": {"gluten"},
-}.items()}
+def _classify(diet: str, names: str, *allergens: str) -> dict:
+    return {n: (diet, frozenset(allergens)) for n in names.split()}
 
-# Ingredient -> the strictest diet a dish containing it can still satisfy.
-DIET_CEILING: dict[str, str] = {
-    "chicken": "omnivore", "beef": "omnivore", "pork": "omnivore",
-    "salmon": "pescatarian", "shrimp": "pescatarian", "crab": "pescatarian",
-    "fish_sauce": "pescatarian",
-    "egg": "vegetarian", "butter": "vegetarian", "cream": "vegetarian",
-    "cream_cheese": "vegetarian", "paneer": "vegetarian", "milk": "vegetarian",
-    "honey": "vegetarian",
+
+# Ingredient -> (the strictest diet a dish containing it can satisfy, allergens it carries).
+# Every menu ingredient must be here or in HOUSE_RECIPES. Add new ingredients deliberately.
+INGREDIENTS: dict[str, tuple[str, frozenset]] = {
+    **_classify("omnivore", "chicken beef pork"),
+    **_classify("pescatarian", "salmon fish_sauce", "fish"),
+    **_classify("pescatarian", "shrimp crab", "shellfish"),
+    **_classify("vegetarian", "egg", "egg"),
+    **_classify("vegetarian", "butter cream cream_cheese paneer milk", "dairy"),
+    **_classify("vegetarian", "honey"),
+    **_classify("vegan", "peanut peanut_sauce", "peanut"),
+    **_classify("vegan", "cashew almond walnut", "tree_nut"),
+    **_classify("vegan", "sesame_seed sesame_oil", "sesame"),
+    **_classify("vegan", "tofu edamame", "soy"),
+    **_classify("vegan", "soy_sauce teriyaki_sauce gochujang hoisin", "soy", "gluten"),
+    **_classify("vegan", "wheat_wrapper bao_bun udon_noodle flour graham_cracker", "gluten"),
+    **_classify("vegan", "bamboo_shoot bean_sprout broccoli cabbage canola_oil carrot chickpea "
+                "chili cocoa_butter cocoa_mass coconut_milk coriander cucumber cumin "
+                "enoki_mushroom galangal garam_masala garlic glass_noodle glutinous_rice "
+                "green_chili kombu lemongrass lime lime_zest mango matcha onion rice "
+                "rice_noodle scallion sea_salt shallot shiitake_mushroom sugar tamarind "
+                "thai_basil tomato water"),
+}
+
+# Compound ingredients made in house, as the restaurant declares them. A dish is judged by
+# these components, so its labels hold for these recipes, not for every commercial version.
+HOUSE_RECIPES: dict[str, tuple[str, ...]] = {
+    "green_curry_paste": ("green_chili", "lemongrass", "galangal", "garlic", "shallot",
+                          "lime_zest", "coriander", "cumin"),
+    "chili_garlic_oil": ("chili", "garlic", "canola_oil"),
+    "dark_chocolate": ("cocoa_mass", "cocoa_butter", "sugar"),
+    "kombu_broth": ("kombu", "water"),
 }
 
 
@@ -99,16 +112,28 @@ def _item(d: dict) -> MenuItem:
         problems.append(f"spice {item.spice!r}")
     if unknown := item.allergens - set(ALLERGENS):
         problems.append(f"unknown allergens {sorted(unknown)}")
+    labeled = DIET_ORDER.index(item.diet) if item.diet in DIET_ORDER else None
+    carried, ceiling = set(), len(DIET_ORDER) - 1
     for ing in ings:
         if ing != ing.lower() or " " in ing:
             problems.append(f"non-canonical ingredient {ing!r}")
-        if missing := ALLERGEN_SOURCES.get(ing, frozenset()) - item.allergens:
-            problems.append(f"{ing} carries {sorted(missing)} but allergens omit it")
-        ceiling = DIET_CEILING.get(ing)
-        if ceiling and DIET_ORDER.index(item.diet) > DIET_ORDER.index(ceiling):
-            problems.append(f"labeled {item.diet} but contains {ing}")
+        for part in HOUSE_RECIPES.get(ing, (ing,)):
+            if part not in INGREDIENTS:
+                problems.append(f"unclassified ingredient {part!r}")
+                continue
+            diet, allergens = INGREDIENTS[part]
+            if missing := allergens - item.allergens:
+                problems.append(f"{ing} carries {sorted(missing)} but allergens omit it")
+            if labeled is not None and labeled > DIET_ORDER.index(diet):
+                problems.append(f"labeled {item.diet} but contains {ing}")
+            carried |= allergens
+            ceiling = min(ceiling, DIET_ORDER.index(diet))
+    if extra := item.allergens - carried:
+        problems.append(f"lists allergens {sorted(extra)} that no ingredient carries")
+    if labeled is not None and labeled < ceiling:
+        problems.append(f"labeled {item.diet} but its ingredients are {DIET_ORDER[ceiling]}")
     if problems:
-        raise MenuError(f"{item.id} {item.name}: " + "; ".join(problems))
+        raise MenuError(f"{item.id} {item.name}: " + "; ".join(dict.fromkeys(problems)))
     return item
 
 
