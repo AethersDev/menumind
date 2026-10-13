@@ -18,6 +18,7 @@ from fastapi.testclient import TestClient
 import accounts as accounts_module
 import agent as agent_module
 import llm
+import server as server_module
 from accounts import LOGIN_FAILURES_ALLOWED, LOGIN_WINDOW_SECONDS, SESSION_SECONDS, Accounts
 from agent import (CONVERSATION_IDLE_SECONDS, MAX_CONVERSATIONS_PER_USER, Agent,
                    UnknownConversation)
@@ -83,12 +84,35 @@ def test_inconsistent_menu_does_not_load(override, message):
         parse_menu(_menu_with(**override))
 
 
-def test_compound_ingredient_is_judged_by_its_recipe(monkeypatch):
-    monkeypatch.setitem(HOUSE_RECIPES, "test_paste", ("garlic", "shrimp"))
+@pytest.mark.parametrize("parts, hidden", [
+    (("garlic", "shrimp"), "['shellfish']"),
+    (("rice", "milk"), "['dairy']"),
+    (("water", "fish_sauce"), "['fish']"),
+])
+def test_compound_ingredient_is_judged_by_its_recipe(monkeypatch, parts, hidden):
+    """An allergen or animal product inside a house recipe can't hide behind its name."""
+    monkeypatch.setitem(HOUSE_RECIPES, "test_paste", parts)
     with pytest.raises(MenuError) as e:
         parse_menu(_menu_with(ingredients=["rice", "test_paste"]))
-    assert "test_paste carries ['shellfish']" in str(e.value)
+    assert f"test_paste carries {hidden}" in str(e.value)
     assert "labeled vegan but contains test_paste" in str(e.value)
+
+
+def test_declared_recipes_reveal_soy_and_wheat_through_nested_recipes():
+    """Teriyaki sauce is made with the house soy sauce: its soy and wheat count."""
+    with pytest.raises(MenuError) as e:
+        parse_menu(_menu_with(ingredients=["rice", "teriyaki_sauce"]))
+    assert "teriyaki_sauce carries ['soy']" in str(e.value)
+    assert "teriyaki_sauce carries ['gluten']" in str(e.value)
+    with pytest.raises(MenuError, match=re.escape("hoisin carries ['gluten']")):  # its own wheat
+        parse_menu(_menu_with(ingredients=["rice", "hoisin"], allergens=["soy"]))
+
+
+def test_a_recipe_cycle_fails_the_load(monkeypatch):
+    monkeypatch.setitem(HOUSE_RECIPES, "sauce_a", ("sauce_b",))
+    monkeypatch.setitem(HOUSE_RECIPES, "sauce_b", ("sauce_a",))
+    with pytest.raises(MenuError, match="house recipe cycle: sauce_a -> sauce_b -> sauce_a"):
+        parse_menu(_menu_with(ingredients=["rice", "sauce_a"]))
 
 
 def test_duplicate_ids_rejected():
@@ -243,6 +267,20 @@ def test_allergy_removal_needs_confirmation(tmp_path):
     assert r.trace["confirmation"] == "yes"
     assert all(not line.startswith("Allergies") for line in r.profile["remembered"])
     assert r.question is None
+
+
+def test_the_app_asks_its_own_question_and_no_other(tmp_path):
+    """Seen live: asked to confirm an allergy removal, the model skipped the app's question,
+    asked "Would you like me to suggest a starter?" instead, and the customer's "yes" to that
+    removed the allergy. Now the app writes the question, and a reply that asks another is
+    rejected."""
+    model_asks = lambda b, m: says("Would you like me to suggest a starter, main, or dessert?")
+    agent, fake = make_agent(tmp_path, responder=model_asks)
+    c1 = agent.start_conversation("alice")
+    agent.turn("alice", c1, "I'm allergic to peanuts.")
+    r = agent.turn("alice", c1, "I'm no longer allergic to peanuts.")
+    assert "starter" not in r.reply and r.reply.endswith(f"**{r.question}**")
+    assert "asked a question" in r.trace["reply_errors"][0][0]
 
 
 def test_unclear_answer_changes_nothing_and_asks_again(tmp_path):
@@ -464,6 +502,7 @@ def test_page_and_menu_are_served(app):
     page = c.get("/").text
     assert "Lantern Street Kitchen" in page and "MenuMind" in page
     assert len(c.get("/api/menu").json()["items"]) == len(MENU.items)
+    assert c.get("/api/health").json()["started_at"]
 
 
 def test_sign_in_flow(app):
@@ -545,6 +584,37 @@ def test_sessions_expire_and_are_cleaned_up(tmp_path, monkeypatch):
 def test_register_rejects_bad_pins(app, pin):
     assert TestClient(app).post("/api/register",
                                 json={"username": "alice", "pin": pin}).status_code == 400
+
+
+def test_chat_is_rate_limited_per_customer_and_in_total(tmp_path, monkeypatch):
+    """Bounds what a public demo can spend on the model."""
+    monkeypatch.setattr(server_module, "CHAT_PER_USER", (2, 600))
+    monkeypatch.setattr(server_module, "CHAT_TOTAL", (3, 86400))
+    app = create_app(db_path=str(tmp_path / "srv.sqlite"), client=FakeLLM(claims=LLM_CLAIMS))
+    (a, ca), (b, cb) = signup(app, "alice"), signup(app, "bob")
+    send = lambda c, cid: c.post("/api/chat", json={"conversation_id": cid, "message": "hi"})
+    assert [send(a, ca).status_code for _ in range(3)] == [200, 200, 429]  # alice's own limit
+    assert send(b, cb).status_code == 200
+    r = send(b, cb)                                                       # everyone's limit
+    assert r.status_code == 429 and "today" in r.json()["detail"]
+
+
+def test_registrations_are_rate_limited(tmp_path, monkeypatch):
+    monkeypatch.setattr(server_module, "REGISTRATIONS", (2, 3600))
+    app = create_app(db_path=str(tmp_path / "srv.sqlite"), client=FakeLLM())
+    c = TestClient(app)
+    codes = [c.post("/api/register", json={"username": f"user{i}", "pin": "1234"}).status_code
+             for i in range(3)]
+    assert codes == [200, 200, 429]
+
+
+def test_large_or_unsized_bodies_are_refused(app):
+    c = TestClient(app)
+    big = {"username": "alice", "pin": "1234", "padding": "x" * 20_000}
+    assert c.post("/api/login", json=big).status_code == 413
+    chunked = c.post("/api/login", content=iter([b'{"username": "a", ', b'"pin": "1234"}']),
+                     headers={"content-type": "application/json"})
+    assert chunked.status_code == 413
 
 
 def test_oversized_credentials_are_rejected_before_hashing(app):

@@ -18,9 +18,8 @@ def _resp(text: str):
 
 
 def default_responder(brief: dict, messages: list) -> str:
-    """Acknowledge changes, ask questions, recommend the top two allowed dishes."""
+    """Acknowledge changes and recommend the top two allowed dishes. Questions are the app's."""
     parts = ["Got it."] if brief.get("changes") else []
-    parts += brief.get("questions_to_ask", [])
     return json.dumps({"message": " ".join(parts) or "Here are a couple of ideas.",
                        "recommend": [r["id"] for r in brief["recommendable"][:2]]})
 

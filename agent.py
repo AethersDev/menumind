@@ -67,7 +67,9 @@ say so.
 with [[item:ID]]; the app adds the warning.
 5. "profile" has what is enforced now ("enforced_now") and what is saved for future visits \
 ("saved"). Where they differ, the difference holds only for this conversation.
-6. If "questions_to_ask" is not empty, ask those questions, keeping their meaning.
+6. "questions_to_ask" are asked by the app after your message: don't ask them, and while there \
+are any, don't ask a question of your own. Never say a preference has changed unless it is in \
+"changes"; a question changes nothing until it is answered.
 7. "changes" are shown to the customer by the app, above your message, with how long each \
 lasts. Don't repeat them or say how long anything lasts.
 8. If "notice" is present, pass it on to the customer.
@@ -286,7 +288,9 @@ class Agent:
 
         message, picks = self._reply(state, text, profile, recs, changes, questions, notice, trace)
         reply, mentioned = render(message, picks, self.menu, recs, profile.active["budget_max"])
-        reply = "\n\n".join(part for part in (_changes_line(changes), reply) if part)
+        # what changed and what must be answered are the app's words, never the model's
+        asks = " ".join(f"**{q}**" for q in questions)
+        reply = "\n\n".join(part for part in (_changes_line(changes), reply, asks) if part)
         with self._lock:
             state.history += [{"role": "user", "content": text},
                               {"role": "assistant",
@@ -348,6 +352,8 @@ class Agent:
                 problems = [f"unreadable reply ({type(e).__name__}: {e})"]
             else:
                 problems = check_reply(message, picks, self.menu, recs)
+                if questions and "?" in message:  # a "yes" must have only one question to answer
+                    problems.append("asked a question while the app's question is waiting")
                 if not check_reply("", picks, self.menu, recs):  # the dishes alone pass
                     usable = picks
                 if not message.strip():
@@ -362,7 +368,7 @@ class Agent:
                 {"role": "user", "content": "That reply broke these rules: " + "; ".join(problems)
                  + ". Rewrite it following the rules."}]
         trace["fallback"] = True
-        return fallback_reply(recs, questions, notice, usable)
+        return fallback_reply(recs, notice, usable, asking=bool(questions))
 
 
 def _parse(raw: str) -> tuple[str, list]:
@@ -374,19 +380,21 @@ def _parse(raw: str) -> tuple[str, list]:
     return message, picks
 
 
-def fallback_reply(recs: Recommendations, questions: list, notice: Optional[str],
-                   picks: Optional[list] = None) -> tuple[str, list]:
+def fallback_reply(recs: Recommendations, notice: Optional[str], picks: Optional[list] = None,
+                   asking: bool = False) -> tuple[str, list]:
     """(message, picks) built only from verified data, for when the model can't produce a
     valid reply. `picks` are the model's own dishes when they passed and only its wording
-    failed (they follow the request, e.g. mains); otherwise the top-ranked dishes."""
+    failed (they follow the request, e.g. mains); otherwise the top-ranked dishes. The app
+    adds any question itself (`asking`), so the message can then be empty."""
     if picks is None:
         picks = [c.item.id for c in recs.candidates[:MAX_PICKS]]
-    parts = ([notice] if notice else []) + questions
+    parts = [notice] if notice else []
     if picks:
         parts.append("A few options that fit:")
     elif not recs.candidates:
         parts.append("Nothing on the menu fits every preference you've given me.")
-    return " ".join(parts) or "I couldn't put a reply together just now; please ask again.", picks
+    default = "" if asking else "I couldn't put a reply together just now; please ask again."
+    return " ".join(parts) or default, picks
 
 
 _PLURALS = (("ies", "y"), ("es", ""), ("s", ""))  # berries, tomatoes, mushrooms

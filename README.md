@@ -107,7 +107,11 @@ the top eligible dishes.
 
 Every reply that changed a preference starts with a line the app writes, not the model:
 "Every visit: ..." for what is saved and "Just this conversation: ..." for what is temporary,
-matching the ticket. In live runs the model sometimes called a saved change temporary.
+matching the ticket. In live runs the model sometimes called a saved change temporary. A
+question the app needs answered (a confirmation or a clarification) ends the reply, also in
+the app's words, and while it waits the model may not ask anything else: in one live run the
+model skipped the app's question and asked "Would you like a suggestion?", and the
+customer's "yes" to that confirmed an allergy removal.
 
 ## Files
 
@@ -125,12 +129,14 @@ matching the ticket. In live runs the model sometimes called a saved change temp
 | `test_*.py` | Tests (no model calls) |
 | `eval_extractor.py`, `extractor_cases.json`, `confirmation_cases.json` | Model evaluation: extractor and yes/no classifier |
 | `eval_conversations.py`, `conversation_cases.json` | Model evaluation: whole conversations through the app |
+| `acceptance.py` | End-to-end acceptance test of a running server, over HTTP |
+| `video/` | The walkthrough: script (`sections.py`), real-app capture, cards and build |
 | `fake_llm.py`, `preview.py` | Scripted model for tests and key-free preview |
 
 ## Tests and evaluation
 
 ```bash
-pytest                                        # 188 tests, no API calls
+pytest                                        # 192 tests, no API calls
 ```
 
 The tests use a scripted model. Evidence that MenuMind works with a real model comes from two
@@ -159,8 +165,10 @@ saved change temporary, and latency. It keeps every reply in the JSON report for
 
 ## Evidence with a real model
 
-Measured on 2026-10-13 on the code in this commit, with `gpt-5.4-mini` (OpenAI, Chat
-Completions) for every model call: `eval_extractor.py`, then `eval_conversations.py --repeats 3`.
+Measured on 2026-10-13 with `gpt-5.4-mini` (OpenAI, Chat Completions) for every model call:
+`eval_extractor.py`, then `eval_conversations.py --repeats 3`. Later, the prepared ingredients
+got declared house recipes, which corrected one dish label (Spicy Chicken Bowl: no gluten); no
+evaluation case involves gluten, and prompts and logic did not change.
 
 | What | Result |
 |---|---|
@@ -210,6 +218,19 @@ builds from a Dockerfile and offers a persistent disk, for example Render, Fly.i
    `COOKIE_SECURE=1` is already set for HTTPS.
 4. Run a single instance (see limitations).
 5. Cap request bodies at the proxy if your host allows it; the app caps fields, not bodies.
+6. Run the acceptance test against the public URL, and restart the service when it asks:
+
+   ```bash
+   python acceptance.py --url https://your-app.example.com
+   ```
+
+   It signs up two customers and walks the main workflow: A's peanut allergy is saved and
+   every recommendation avoids peanut; a new conversation and a server restart both keep it;
+   removing it asks first, keeps avoiding peanut until A says yes, then removes only the
+   allergy; customer B sees none of A's memory and cannot open A's conversation. It prints
+   PASS or FAIL per check and exits 1 on any failure. If the database is not on a persistent
+   disk, it stops at the restart. Locally: `python acceptance.py --no-restart`, or restart
+   `uvicorn` when asked.
 
 Logs go to stderr. Model failures and rejected model replies are warnings, logged with user
 ids but not message text (an extraction error may quote the value it rejected). Unexpected
@@ -220,11 +241,16 @@ tune them from the latency the evaluation reports.
 ## Limitations, stated plainly
 
 - **Allergen and diet labels describe declared ingredients, not a real kitchen.** The loader
-  rejects unclassified ingredients and labels that disagree with them. Compound ingredients
-  (green curry paste, chili-garlic oil, dark chocolate, kombu broth) are judged by the house
-  recipes declared in `menu.py`, not by every commercial version. Cross-contact is not
-  modeled, so the app makes claims about declared recipes, not medical allergy safety. Tell
-  customers with severe allergies to confirm with staff.
+  rejects unclassified ingredients and labels that disagree with them. The twelve house-made
+  sauces, pastes, buns, wrappers, oil, broth, chocolate and crackers have declared recipes in
+  `menu.py`; a recipe may use another (teriyaki sauce uses the house soy sauce), and a dish's
+  allergens and diet are derived from the basic ingredients. These are the fictional
+  restaurant's own declarations, not facts about commercial products; a real restaurant would
+  need verified formulations from its suppliers. Other ingredients are classified directly,
+  including some prepared ones whose allergens come from a single source (udon noodles,
+  fish sauce, paneer, cream cheese, garam masala, rice and glass noodles).
+  Cross-contact is not modeled, so the app makes claims about declared recipes, not medical
+  allergy safety. Tell customers with severe allergies to confirm with staff.
 - **The model's message is not fully checked.** Recommended dishes are written by code from
   the eligible set, so the recommendation list never contains an ineligible dish. The
   message itself is checked for full dish names and typed prices, but a dish described in
