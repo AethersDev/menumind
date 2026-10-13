@@ -1,0 +1,2380 @@
+{
+  "model": "gpt-5.4-mini",
+  "summary": {
+    "unsafe_recommendations": 0,
+    "cases_correct": 41,
+    "cases": 42,
+    "turns_correct": 74,
+    "turns": 75,
+    "extraction_failures": 0,
+    "fallback_replies": 0,
+    "reply_rejected_at_least_once": 1,
+    "saved_change_called_temporary": 0,
+    "latency_s": {
+      "mean": 2.5,
+      "max": 4.998,
+      "p95": 3.703
+    },
+    "failures": [
+      [
+        "req4-spice-update",
+        2,
+        "I don't like spicy food anymore.",
+        "durable spice_tolerance is None, expected 'none'"
+      ]
+    ]
+  },
+  "rows": [
+    {
+      "id": "req1-natural-preferences",
+      "repeat": 0,
+      "turns": [
+        {
+          "say": "I love spicy food, but I hate mushrooms.",
+          "reply": "Every visit: spice: hot; dislikes mushroom.\n\nYou might like **Spicy Chicken Bowl** ($12.00) for the heat, and **Green Curry with Chicken** ($15.00) if you want the same spice level with a curry style. I\u2019m avoiding anything with mushroom, as requested.",
+          "latency_s": 2.813,
+          "failed": [],
+          "changes": [
+            "spice: hot",
+            "dislikes mushroom"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "spice_tolerance",
+              "polarity": "assert",
+              "subject": null,
+              "value": "hot",
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I love spicy food"
+            },
+            {
+              "attribute": "disliked_ingredient",
+              "polarity": "assert",
+              "subject": "mushroom",
+              "value": null,
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I hate mushrooms"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R6",
+              "outcome": "apply",
+              "reason": "soft preference"
+            },
+            {
+              "rule": "R6",
+              "outcome": "apply",
+              "reason": "soft preference"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "req2-main-under-15",
+      "repeat": 0,
+      "turns": [
+        {
+          "say": "What should I get for a main under $15?",
+          "reply": "For a main under your budget, I\u2019d suggest **Mushroom Udon** ($13.00), **Chana Masala** ($12.00), or **Tofu Pad Thai** ($14.00). **Mushroom Udon** is the safest pick if you want something simple and non-spicy, **Chana Masala** is a flavorful medium-spice option, and **Tofu Pad Thai** is a mild noodle dish with tofu. If you want, I can narrow it down by spice level or ingredients.",
+          "latency_s": 2.422,
+          "failed": [],
+          "changes": [],
+          "question": null,
+          "claims": [],
+          "decisions": [],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "req3-memory-across-visits-and-restart",
+      "repeat": 0,
+      "turns": [
+        {
+          "say": "I'm vegetarian and allergic to sesame.",
+          "reply": "Every visit: diet: vegetarian; avoiding sesame (allergy).\n\nI can suggest vegetarian options that avoid sesame. Good picks are **Salted Edamame** ($5.00), **Chana Masala** ($12.00), and **Coconut Lime Sorbet** ($6.00).",
+          "latency_s": 2.328,
+          "failed": [],
+          "changes": [
+            "diet: vegetarian",
+            "avoiding sesame (allergy)"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "diet",
+              "polarity": "assert",
+              "subject": null,
+              "value": "vegetarian",
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I'm vegetarian"
+            },
+            {
+              "attribute": "allergen",
+              "polarity": "assert",
+              "subject": "sesame",
+              "value": null,
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "allergic to sesame"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R8",
+              "outcome": "apply",
+              "reason": "tightening applied"
+            },
+            {
+              "rule": "R8",
+              "outcome": "apply",
+              "reason": "tightening applied"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        },
+        {
+          "say": "What do you recommend?",
+          "reply": "I\u2019d suggest **Salted Edamame** ($5.00) or **Vegetable Spring Rolls** ($7.00) if you want a starter, and **Mushroom Udon** ($13.00), **Chana Masala** ($12.00), or **Tofu Pad Thai** ($14.00) for a main. For dessert, **Coconut Lime Sorbet** ($6.00) is the safest fit with your preferences. I\u2019d skip the sesame-containing dessert options.",
+          "latency_s": 2.123,
+          "failed": [],
+          "changes": [],
+          "question": null,
+          "claims": [],
+          "decisions": [],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        },
+        {
+          "say": "Any dessert ideas?",
+          "reply": "I can suggest a couple of dessert options that fit your vegetarian preference and avoid sesame: **Coconut Lime Sorbet** ($6.00) and **Matcha Cheesecake** ($8.00). If you want something richer, **Chili Chocolate Brownie** ($7.50) is another option, though it has a little warmth from chili.",
+          "latency_s": 2.092,
+          "failed": [],
+          "changes": [],
+          "question": null,
+          "claims": [],
+          "decisions": [],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "req4-spice-update",
+      "repeat": 0,
+      "turns": [
+        {
+          "say": "I love spicy food.",
+          "reply": "Every visit: spice: hot.\n\nGreat \u2014 I\u2019d point you toward **Green Curry with Chicken** ($15.00), **Spicy Chicken Bowl** ($12.00), or **Green Curry with Tofu** ($14.00) if you want something that matches your hot spice preference. If you\u2019d like, I can also suggest a starter or dessert with a little heat.",
+          "latency_s": 2.549,
+          "failed": [],
+          "changes": [
+            "spice: hot"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "spice_tolerance",
+              "polarity": "assert",
+              "subject": null,
+              "value": "hot",
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I love spicy food"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R6",
+              "outcome": "apply",
+              "reason": "soft preference"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        },
+        {
+          "say": "I don't like spicy food anymore.",
+          "reply": "Every visit: spice: none.\n\nGot it \u2014 I\u2019ll avoid anything with heat and stick to options that match your current preference. Here are a few good fits: **Teriyaki Chicken Bowl** ($12.00), **Mushroom Udon** ($13.00), and **Coconut Lime Sorbet** ($6.00).",
+          "latency_s": 2.268,
+          "failed": [],
+          "changes": [
+            "spice: none"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "spice_tolerance",
+              "polarity": "assert",
+              "subject": null,
+              "value": "none",
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I don't like spicy food anymore"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R6",
+              "outcome": "apply",
+              "reason": "soft preference"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "req4-allergy-removal-needs-yes",
+      "repeat": 0,
+      "turns": [
+        {
+          "say": "I'm allergic to peanuts.",
+          "reply": "Every visit: avoiding peanut (allergy).\n\nI\u2019ll avoid anything with peanuts. Good options for you include **Salted Edamame** ($5.00), **Vegetable Spring Rolls** ($7.00), **Crispy Mushroom Bao** ($8.00), **Mushroom Udon** ($13.00), **Chana Masala** ($12.00), or **Coconut Lime Sorbet** ($6.00). If you want, I can narrow that down to starter, main, or dessert.",
+          "latency_s": 2.571,
+          "failed": [],
+          "changes": [
+            "avoiding peanut (allergy)"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "allergen",
+              "polarity": "assert",
+              "subject": "peanut",
+              "value": null,
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I'm allergic to peanuts"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R8",
+              "outcome": "apply",
+              "reason": "tightening applied"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        },
+        {
+          "say": "I'm no longer allergic to peanuts.",
+          "reply": "Should I stop treating peanut as an allergy? I\u2019ll keep avoiding it until you confirm. If you\u2019d like a suggestion meanwhile, I can still point you to a starter, main, or dessert that fits your other preferences.",
+          "latency_s": 2.391,
+          "failed": [],
+          "changes": [],
+          "question": "Should I stop treating peanut as an allergy? I'll keep avoiding it until you confirm.",
+          "claims": [
+            {
+              "attribute": "allergen",
+              "polarity": "negate",
+              "subject": "peanut",
+              "value": null,
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I'm no longer allergic to peanuts"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R10",
+              "outcome": "confirm",
+              "reason": "loosening a hard restriction needs confirmation"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        },
+        {
+          "say": "Yes, please.",
+          "reply": "Every visit: no longer avoiding peanut.\n\nHere are a few good picks: **Vegetable Spring Rolls** ($7.00), **Chana Masala** ($12.00), and **Coconut Lime Sorbet** ($6.00). **Vegetable Spring Rolls** is a crunchy starter, **Chana Masala** is a filling main, and **Coconut Lime Sorbet** is a light dessert.",
+          "latency_s": 3.429,
+          "failed": [],
+          "changes": [
+            "no longer avoiding peanut"
+          ],
+          "question": null,
+          "claims": [],
+          "decisions": [],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "req4-unclear-answer-keeps-allergy",
+      "repeat": 0,
+      "turns": [
+        {
+          "say": "I'm allergic to peanuts.",
+          "reply": "Every visit: avoiding peanut (allergy).\n\nThanks for letting me know \u2014 I\u2019ll avoid peanut for you. If you want, I can suggest some safe options from any course, or I can narrow it to starter, main, or dessert.",
+          "latency_s": 2.165,
+          "failed": [],
+          "changes": [
+            "avoiding peanut (allergy)"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "allergen",
+              "polarity": "assert",
+              "subject": "peanut",
+              "value": null,
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I'm allergic to peanuts"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R8",
+              "outcome": "apply",
+              "reason": "tightening applied"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        },
+        {
+          "say": "I'm not allergic to peanuts anymore.",
+          "reply": "Should I stop treating peanut as an allergy? I'll keep avoiding it until you confirm. If you'd like a suggestion meanwhile, I can recommend a starter, main, or dessert that avoids peanut.",
+          "latency_s": 2.302,
+          "failed": [],
+          "changes": [],
+          "question": "Should I stop treating peanut as an allergy? I'll keep avoiding it until you confirm.",
+          "claims": [
+            {
+              "attribute": "allergen",
+              "polarity": "negate",
+              "subject": "peanut",
+              "value": null,
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I'm not allergic to peanuts anymore"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R10",
+              "outcome": "confirm",
+              "reason": "loosening a hard restriction needs confirmation"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        },
+        {
+          "say": "Hmm, I'm honestly not sure.",
+          "reply": "Should I stop treating peanut as an allergy? I'll keep avoiding it until you confirm. If you want a safe pick in the meantime, I can suggest a starter, main, or dessert.",
+          "latency_s": 2.878,
+          "failed": [],
+          "changes": [],
+          "question": "Should I stop treating peanut as an allergy? I'll keep avoiding it until you confirm.",
+          "claims": [],
+          "decisions": [],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "req5-customers-kept-separate",
+      "repeat": 0,
+      "turns": [
+        {
+          "say": "I'm allergic to shellfish.",
+          "reply": "Every visit: avoiding shellfish (allergy).\n\nNoted \u2014 I\u2019ll avoid shellfish for you. A safe starter option is **Salted Edamame** ($5.00), and for a main you could try **Chana Masala** ($12.00) or **Mushroom Udon** ($13.00). If you want dessert, **Coconut Lime Sorbet** ($6.00) is also a good fit.",
+          "latency_s": 2.301,
+          "failed": [],
+          "changes": [
+            "avoiding shellfish (allergy)"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "allergen",
+              "polarity": "assert",
+              "subject": "shellfish",
+              "value": null,
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I'm allergic to shellfish"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R8",
+              "outcome": "apply",
+              "reason": "tightening applied"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        },
+        {
+          "say": "What do you recommend?",
+          "reply": "I\u2019d suggest a mix of one starter, one main, and one dessert: **Crispy Mushroom Bao** ($8.00), **Mushroom Udon** ($13.00), and **Coconut Lime Sorbet** ($6.00). If you want, I can also steer you toward something milder or more filling.",
+          "latency_s": 2.084,
+          "failed": [],
+          "changes": [],
+          "question": null,
+          "claims": [],
+          "decisions": [],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "tonight-only",
+      "repeat": 0,
+      "turns": [
+        {
+          "say": "I love spicy food.",
+          "reply": "Every visit: spice: hot.\n\nHere are a few hot options that fit your preference: **Spicy Chicken Bowl** ($12.00), **Green Curry with Chicken** ($15.00), and **Green Curry with Tofu** ($14.00).",
+          "latency_s": 2.114,
+          "failed": [],
+          "changes": [
+            "spice: hot"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "spice_tolerance",
+              "polarity": "assert",
+              "subject": null,
+              "value": "hot",
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I love spicy food"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R6",
+              "outcome": "apply",
+              "reason": "soft preference"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        },
+        {
+          "say": "Nothing spicy tonight, please.",
+          "reply": "Just this conversation: spice: none.\n\nNo spicy options this time. If you'd like, I can suggest a few that match your no-spice preference, like **Teriyaki Chicken Bowl** ($12.00), **Mushroom Udon** ($13.00), or **Coconut Lime Sorbet** ($6.00).",
+          "latency_s": 2.275,
+          "failed": [],
+          "changes": [
+            "spice: none (this conversation)"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "spice_tolerance",
+              "polarity": "assert",
+              "subject": null,
+              "value": "none",
+              "temporal": "conversation",
+              "modality": "asserted",
+              "evidence": "Nothing spicy tonight, please"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R6",
+              "outcome": "apply",
+              "reason": "soft preference"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        },
+        {
+          "say": "What do you suggest?",
+          "reply": "I\u2019d suggest **Spicy Chicken Bowl** ($12.00), **Green Curry with Chicken** ($15.00), or **Mushroom Udon** ($13.00): two hot mains that fit your spice preference, plus a milder option if you want something less intense. If you want a starter or dessert instead, I can narrow it down too.",
+          "latency_s": 2.293,
+          "failed": [],
+          "changes": [],
+          "question": null,
+          "claims": [],
+          "decisions": [],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "nuts-means-both",
+      "repeat": 0,
+      "turns": [
+        {
+          "say": "I'm allergic to nuts.",
+          "reply": "Every visit: avoiding peanut (allergy); avoiding tree nut (allergy).\n\nThanks for letting me know. I\u2019ll avoid anything with peanut or tree nut, and I can suggest a few nut-free picks if you want starters, mains, or dessert.",
+          "latency_s": 2.858,
+          "failed": [],
+          "changes": [
+            "avoiding peanut (allergy)",
+            "avoiding tree nut (allergy)"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "allergen",
+              "polarity": "assert",
+              "subject": "peanut",
+              "value": null,
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I'm allergic to nuts"
+            },
+            {
+              "attribute": "allergen",
+              "polarity": "assert",
+              "subject": "tree_nut",
+              "value": null,
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I'm allergic to nuts"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R8",
+              "outcome": "apply",
+              "reason": "tightening applied"
+            },
+            {
+              "rule": "R8",
+              "outcome": "apply",
+              "reason": "tightening applied"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "companion-allergy-tonight",
+      "repeat": 0,
+      "turns": [
+        {
+          "say": "My son has a sesame allergy and he's joining me for dinner tonight.",
+          "reply": "Just this conversation: avoiding sesame (allergy).\n\nI\u2019ve noted the sesame allergy for this visit. Good options without sesame include **Salted Edamame** ($5.00), **Vegetable Spring Rolls** ($7.00), **Mushroom Udon** ($13.00), **Chana Masala** ($12.00), and **Coconut Lime Sorbet** ($6.00); if you want, I can narrow them by starter, main, or dessert.",
+          "latency_s": 2.451,
+          "failed": [],
+          "changes": [
+            "avoiding sesame (allergy) (this conversation)"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "allergen",
+              "polarity": "assert",
+              "subject": "sesame",
+              "value": null,
+              "temporal": "conversation",
+              "modality": "asserted",
+              "evidence": "has a sesame allergy and he's joining me for dinner tonight"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R8",
+              "outcome": "apply",
+              "reason": "tightening applied"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "question-saves-nothing",
+      "repeat": 0,
+      "turns": [
+        {
+          "say": "Does the pad thai have peanuts?",
+          "reply": "Yes \u2014 **Tofu Pad Thai** ($14.00) contains peanuts according to the menu. If you\u2019re avoiding peanuts, I can suggest a different main.",
+          "latency_s": 2.315,
+          "failed": [],
+          "changes": [],
+          "question": null,
+          "claims": [],
+          "decisions": [],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "hedged-allergy-enforced-and-asked",
+      "repeat": 0,
+      "turns": [
+        {
+          "say": "I think I might be allergic to shellfish.",
+          "reply": "Just this conversation: avoiding shellfish (allergy).\n\nI\u2019ll avoid anything with shellfish for this conversation. Should I save shellfish as an allergy for future visits?",
+          "latency_s": 2.411,
+          "failed": [],
+          "changes": [
+            "avoiding shellfish (allergy) (this conversation)"
+          ],
+          "question": "Should I save shellfish as an allergy for future visits?",
+          "claims": [
+            {
+              "attribute": "allergen",
+              "polarity": "assert",
+              "subject": "shellfish",
+              "value": null,
+              "temporal": "current",
+              "modality": "hedged",
+              "evidence": "I think I might be allergic to shellfish"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R9",
+              "outcome": "apply+confirm",
+              "reason": "hedged tightening: enforced now, durable change needs confirmation"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "past-diet-is-not-dropped",
+      "repeat": 0,
+      "turns": [
+        {
+          "say": "I'm vegetarian.",
+          "reply": "Every visit: diet: vegetarian.\n\nHere are some vegetarian choices: **Tofu Pad Thai** ($14.00), **Paneer Tikka Masala** ($15.00), and **Matcha Cheesecake** ($8.00). If you want something lighter, **Mushroom Udon** ($13.00) or **Coconut Lime Sorbet** ($6.00) are also good options.",
+          "latency_s": 2.646,
+          "failed": [],
+          "changes": [
+            "diet: vegetarian"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "diet",
+              "polarity": "assert",
+              "subject": null,
+              "value": "vegetarian",
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I'm vegetarian"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R8",
+              "outcome": "apply",
+              "reason": "tightening applied"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        },
+        {
+          "say": "I used to be vegetarian.",
+          "reply": "Got it, you're no longer vegetarian. How do you eat now? Until you tell me, I'll keep recommendations vegetarian.",
+          "latency_s": 1.916,
+          "failed": [],
+          "changes": [],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "diet",
+              "polarity": "assert",
+              "subject": null,
+              "value": "vegetarian",
+              "temporal": "past",
+              "modality": "asserted",
+              "evidence": "I used to be vegetarian"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R1",
+              "outcome": "clarify",
+              "reason": "past statement about the stored diet; its replacement is unknown"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "allergy-then-suggestion",
+      "repeat": 0,
+      "turns": [
+        {
+          "say": "I'm allergic to soy. What main would you suggest?",
+          "reply": "Every visit: avoiding soy (allergy).\n\nFor a soy-free main, **Chana Masala** ($12.00) is the safest fit; it has no listed allergens and is medium-spiced. If you\u2019d like, I can also suggest a soy-free starter or dessert.",
+          "latency_s": 2.204,
+          "failed": [],
+          "changes": [
+            "avoiding soy (allergy)"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "allergen",
+              "polarity": "assert",
+              "subject": "soy",
+              "value": null,
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I'm allergic to soy"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R8",
+              "outcome": "apply",
+              "reason": "tightening applied"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "req1-natural-preferences",
+      "repeat": 1,
+      "turns": [
+        {
+          "say": "I love spicy food, but I hate mushrooms.",
+          "reply": "Every visit: spice: hot; dislikes mushroom.\n\nYou seem set for spice, and I\u2019d avoid anything with mushroom. Good fits are **Spicy Chicken Bowl** ($12.00), **Green Curry with Chicken** ($15.00), and **Chili Garlic Edamame** ($6.00); the first two match your hot preference, while the starter brings some heat too. If you want, I can narrow it to a starter, main, or dessert.",
+          "latency_s": 4.998,
+          "failed": [],
+          "changes": [
+            "spice: hot",
+            "dislikes mushroom"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "spice_tolerance",
+              "polarity": "assert",
+              "subject": null,
+              "value": "hot",
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I love spicy food"
+            },
+            {
+              "attribute": "disliked_ingredient",
+              "polarity": "assert",
+              "subject": "mushroom",
+              "value": null,
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I hate mushrooms"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R6",
+              "outcome": "apply",
+              "reason": "soft preference"
+            },
+            {
+              "rule": "R6",
+              "outcome": "apply",
+              "reason": "soft preference"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "req2-main-under-15",
+      "repeat": 1,
+      "turns": [
+        {
+          "say": "What should I get for a main under $15?",
+          "reply": "For a main under your budget, I\u2019d suggest **Mushroom Udon** ($13.00), **Chana Masala** ($12.00), or **Teriyaki Chicken Bowl** ($12.00). If you want something mild and noodle-based, **Mushroom Udon** is a good pick; if you want a spiced vegetarian option, **Chana Masala** fits; and if you want chicken with no heat, **Teriyaki Chicken Bowl** works well.",
+          "latency_s": 3.719,
+          "failed": [],
+          "changes": [],
+          "question": null,
+          "claims": [],
+          "decisions": [],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "req3-memory-across-visits-and-restart",
+      "repeat": 1,
+      "turns": [
+        {
+          "say": "I'm vegetarian and allergic to sesame.",
+          "reply": "Every visit: diet: vegetarian; avoiding sesame (allergy).\n\nHere are some vegetarian, sesame-free options: **Salted Edamame** ($5.00), **Vegetable Spring Rolls** ($7.00), and **Chana Masala** ($12.00). If you want, I can also suggest a dessert.",
+          "latency_s": 2.805,
+          "failed": [],
+          "changes": [
+            "diet: vegetarian",
+            "avoiding sesame (allergy)"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "diet",
+              "polarity": "assert",
+              "subject": null,
+              "value": "vegetarian",
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I'm vegetarian"
+            },
+            {
+              "attribute": "allergen",
+              "polarity": "assert",
+              "subject": "sesame",
+              "value": null,
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "allergic to sesame"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R8",
+              "outcome": "apply",
+              "reason": "tightening applied"
+            },
+            {
+              "rule": "R8",
+              "outcome": "apply",
+              "reason": "tightening applied"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        },
+        {
+          "say": "What do you recommend?",
+          "reply": "I\u2019d recommend **Mushroom Udon** ($13.00), **Chana Masala** ($12.00), and **Coconut Lime Sorbet** ($6.00): they fit a vegetarian diet and avoid sesame. If you want something milder, **Mushroom Udon** and **Coconut Lime Sorbet** are both non-spicy, while **Chana Masala** has a medium spice level.",
+          "latency_s": 2.128,
+          "failed": [],
+          "changes": [],
+          "question": null,
+          "claims": [],
+          "decisions": [],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        },
+        {
+          "say": "Any dessert ideas?",
+          "reply": "For dessert, I\u2019d suggest **Coconut Lime Sorbet** ($6.00) if you want something light and refreshing, or **Chili Chocolate Brownie** ($7.50) if you\u2019re in the mood for something richer. I\u2019m avoiding the one that conflicts with your sesame allergy.",
+          "latency_s": 2.478,
+          "failed": [],
+          "changes": [],
+          "question": null,
+          "claims": [],
+          "decisions": [],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "req4-spice-update",
+      "repeat": 1,
+      "turns": [
+        {
+          "say": "I love spicy food.",
+          "reply": "Every visit: spice: hot.\n\nHere are a few hot options that fit your taste: **Spicy Chicken Bowl** ($12.00), **Green Curry with Chicken** ($15.00), and **Green Curry with Tofu** ($14.00).",
+          "latency_s": 2.557,
+          "failed": [],
+          "changes": [
+            "spice: hot"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "spice_tolerance",
+              "polarity": "assert",
+              "subject": null,
+              "value": "hot",
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I love spicy food"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R6",
+              "outcome": "apply",
+              "reason": "soft preference"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        },
+        {
+          "say": "I don't like spicy food anymore.",
+          "reply": "Every visit: spice: none.\n\nGot it \u2014 I\u2019ll stick to non-spicy options. A few good fits are **Teriyaki Chicken Bowl** ($12.00), **Mushroom Udon** ($13.00), and **Coconut Lime Sorbet** ($6.00).",
+          "latency_s": 2.351,
+          "failed": [],
+          "changes": [
+            "spice: none"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "spice_tolerance",
+              "polarity": "assert",
+              "subject": null,
+              "value": "none",
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I don't like spicy food anymore"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R6",
+              "outcome": "apply",
+              "reason": "soft preference"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "req4-allergy-removal-needs-yes",
+      "repeat": 1,
+      "turns": [
+        {
+          "say": "I'm allergic to peanuts.",
+          "reply": "Every visit: avoiding peanut (allergy).\n\nThanks for letting me know \u2014 I\u2019ll avoid anything with peanut. Good options for you include **Salted Edamame** ($5.00), **Mushroom Udon** ($13.00), or **Coconut Lime Sorbet** ($6.00).",
+          "latency_s": 2.252,
+          "failed": [],
+          "changes": [
+            "avoiding peanut (allergy)"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "allergen",
+              "polarity": "assert",
+              "subject": "peanut",
+              "value": null,
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I'm allergic to peanuts"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R8",
+              "outcome": "apply",
+              "reason": "tightening applied"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        },
+        {
+          "say": "I'm no longer allergic to peanuts.",
+          "reply": "Should I stop treating peanut as an allergy? I'll keep avoiding it until you confirm.",
+          "latency_s": 2.048,
+          "failed": [],
+          "changes": [],
+          "question": "Should I stop treating peanut as an allergy? I'll keep avoiding it until you confirm.",
+          "claims": [
+            {
+              "attribute": "allergen",
+              "polarity": "negate",
+              "subject": "peanut",
+              "value": null,
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I'm no longer allergic to peanuts"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R10",
+              "outcome": "confirm",
+              "reason": "loosening a hard restriction needs confirmation"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        },
+        {
+          "say": "Yes, please.",
+          "reply": "Every visit: no longer avoiding peanut.\n\nGot it \u2014 I\u2019ll stop avoiding peanut now. Here are a few good picks: **Salted Edamame** ($5.00), **Mushroom Udon** ($13.00), and **Coconut Lime Sorbet** ($6.00).",
+          "latency_s": 2.863,
+          "failed": [],
+          "changes": [
+            "no longer avoiding peanut"
+          ],
+          "question": null,
+          "claims": [],
+          "decisions": [],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "req4-unclear-answer-keeps-allergy",
+      "repeat": 1,
+      "turns": [
+        {
+          "say": "I'm allergic to peanuts.",
+          "reply": "Every visit: avoiding peanut (allergy).\n\nThanks for letting me know \u2014 I\u2019ll avoid anything with peanut. If you\u2019d like a suggestion, I can recommend peanut-free starters, mains, or desserts.",
+          "latency_s": 2.479,
+          "failed": [],
+          "changes": [
+            "avoiding peanut (allergy)"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "allergen",
+              "polarity": "assert",
+              "subject": "peanut",
+              "value": null,
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I'm allergic to peanuts"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R8",
+              "outcome": "apply",
+              "reason": "tightening applied"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        },
+        {
+          "say": "I'm not allergic to peanuts anymore.",
+          "reply": "Should I stop treating peanut as an allergy? I\u2019ll keep avoiding it until you confirm.",
+          "latency_s": 1.952,
+          "failed": [],
+          "changes": [],
+          "question": "Should I stop treating peanut as an allergy? I'll keep avoiding it until you confirm.",
+          "claims": [
+            {
+              "attribute": "allergen",
+              "polarity": "negate",
+              "subject": "peanut",
+              "value": null,
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I'm not allergic to peanuts anymore"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R10",
+              "outcome": "confirm",
+              "reason": "loosening a hard restriction needs confirmation"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        },
+        {
+          "say": "Hmm, I'm honestly not sure.",
+          "reply": "Should I stop treating peanut as an allergy? I'll keep avoiding it until you confirm.",
+          "latency_s": 3.042,
+          "failed": [],
+          "changes": [],
+          "question": "Should I stop treating peanut as an allergy? I'll keep avoiding it until you confirm.",
+          "claims": [],
+          "decisions": [],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "req5-customers-kept-separate",
+      "repeat": 1,
+      "turns": [
+        {
+          "say": "I'm allergic to shellfish.",
+          "reply": "Every visit: avoiding shellfish (allergy).\n\nThanks for letting me know; I\u2019ll avoid shellfish. If you want a safe pick, **Salted Edamame** ($5.00), **Chana Masala** ($12.00), and **Coconut Lime Sorbet** ($6.00) all fit that allergy and have no shellfish ingredients.",
+          "latency_s": 2.249,
+          "failed": [],
+          "changes": [
+            "avoiding shellfish (allergy)"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "allergen",
+              "polarity": "assert",
+              "subject": "shellfish",
+              "value": null,
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I'm allergic to shellfish"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R8",
+              "outcome": "apply",
+              "reason": "tightening applied"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        },
+        {
+          "say": "What do you recommend?",
+          "reply": "A few good picks are **Mushroom Udon** ($13.00), **Teriyaki Chicken Bowl** ($12.00), and **Coconut Lime Sorbet** ($6.00). **Mushroom Udon** is a simple noodle bowl with mushrooms and no spice, **Teriyaki Chicken Bowl** is a mild chicken bowl, and **Coconut Lime Sorbet** is a light dairy-free dessert. If you want, I can also narrow it down by starter, main, or dessert.",
+          "latency_s": 2.351,
+          "failed": [],
+          "changes": [],
+          "question": null,
+          "claims": [],
+          "decisions": [],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "tonight-only",
+      "repeat": 1,
+      "turns": [
+        {
+          "say": "I love spicy food.",
+          "reply": "Every visit: spice: hot.\n\nA few hot options stand out: **Spicy Chicken Bowl** ($12.00), **Green Curry with Chicken** ($15.00), and **Green Curry with Tofu** ($14.00). If you want, I can also suggest a starter or dessert that fits your spice preference.",
+          "latency_s": 2.138,
+          "failed": [],
+          "changes": [
+            "spice: hot"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "spice_tolerance",
+              "polarity": "assert",
+              "subject": null,
+              "value": "hot",
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I love spicy food"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R6",
+              "outcome": "apply",
+              "reason": "soft preference"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        },
+        {
+          "say": "Nothing spicy tonight, please.",
+          "reply": "Just this conversation: spice: none.\n\nUnderstood \u2014 I\u2019m only suggesting items with no spice at all. Good options are **Teriyaki Chicken Bowl** ($12.00), **Mushroom Udon** ($13.00), and **Coconut Lime Sorbet** ($6.00).",
+          "latency_s": 2.68,
+          "failed": [],
+          "changes": [
+            "spice: none (this conversation)"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "spice_tolerance",
+              "polarity": "assert",
+              "subject": null,
+              "value": "none",
+              "temporal": "conversation",
+              "modality": "asserted",
+              "evidence": "Nothing spicy tonight, please."
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R6",
+              "outcome": "apply",
+              "reason": "soft preference"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        },
+        {
+          "say": "What do you suggest?",
+          "reply": "I\u2019d suggest **Spicy Chicken Bowl** ($12.00), **Green Curry with Chicken** ($15.00), or **Teriyaki Chicken Bowl** ($12.00) if you want something in your heat range. **Spicy Chicken Bowl** is a strong pick for a bolder chili kick, **Green Curry with Chicken** is a rich curry option, and **Teriyaki Chicken Bowl** is there if you want the same bowl without heat. If you\u2019d like, I can also suggest a starter or dessert.",
+          "latency_s": 2.925,
+          "failed": [],
+          "changes": [],
+          "question": null,
+          "claims": [],
+          "decisions": [],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "nuts-means-both",
+      "repeat": 1,
+      "turns": [
+        {
+          "say": "I'm allergic to nuts.",
+          "reply": "Every visit: avoiding peanut (allergy); avoiding tree nut (allergy).\n\nThanks for letting me know \u2014 I\u2019ll avoid peanuts and tree nuts. Good choices for you include **Salted Edamame** ($5.00), **Chana Masala** ($12.00), and **Coconut Lime Sorbet** ($6.00).",
+          "latency_s": 2.423,
+          "failed": [],
+          "changes": [
+            "avoiding peanut (allergy)",
+            "avoiding tree nut (allergy)"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "allergen",
+              "polarity": "assert",
+              "subject": "peanut",
+              "value": null,
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I'm allergic to nuts"
+            },
+            {
+              "attribute": "allergen",
+              "polarity": "assert",
+              "subject": "tree_nut",
+              "value": null,
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I'm allergic to nuts"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R8",
+              "outcome": "apply",
+              "reason": "tightening applied"
+            },
+            {
+              "rule": "R8",
+              "outcome": "apply",
+              "reason": "tightening applied"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "companion-allergy-tonight",
+      "repeat": 1,
+      "turns": [
+        {
+          "say": "My son has a sesame allergy and he's joining me for dinner tonight.",
+          "reply": "Just this conversation: avoiding sesame (allergy).\n\nNoted \u2014 I\u2019ll avoid sesame for this visit. Good options for him include **Salted Edamame** ($5.00), **Vegetable Spring Rolls** ($7.00), **Crispy Mushroom Bao** ($8.00), **Mushroom Udon** ($13.00), **Chana Masala** ($12.00), or **Coconut Lime Sorbet** ($6.00); I\u2019d skip anything that includes sesame or is flagged for sesame. If you want, I can narrow this to starter, main, or dessert.",
+          "latency_s": 2.814,
+          "failed": [],
+          "changes": [
+            "avoiding sesame (allergy) (this conversation)"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "allergen",
+              "polarity": "assert",
+              "subject": "sesame",
+              "value": null,
+              "temporal": "conversation",
+              "modality": "asserted",
+              "evidence": "my son has a sesame allergy and he's joining me for dinner tonight"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R8",
+              "outcome": "apply",
+              "reason": "tightening applied"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "question-saves-nothing",
+      "repeat": 1,
+      "turns": [
+        {
+          "say": "Does the pad thai have peanuts?",
+          "reply": "Yes \u2014 it contains peanuts, as well as egg, gluten, and soy. If you'd like, I can suggest a peanut-free main instead.",
+          "latency_s": 1.905,
+          "failed": [],
+          "changes": [],
+          "question": null,
+          "claims": [],
+          "decisions": [],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "hedged-allergy-enforced-and-asked",
+      "repeat": 1,
+      "turns": [
+        {
+          "say": "I think I might be allergic to shellfish.",
+          "reply": "Just this conversation: avoiding shellfish (allergy).\n\nThanks for letting me know \u2014 I\u2019ll avoid shellfish for this conversation. Should I save shellfish as an allergy for future visits?",
+          "latency_s": 2.323,
+          "failed": [],
+          "changes": [
+            "avoiding shellfish (allergy) (this conversation)"
+          ],
+          "question": "Should I save shellfish as an allergy for future visits?",
+          "claims": [
+            {
+              "attribute": "allergen",
+              "polarity": "assert",
+              "subject": "shellfish",
+              "value": null,
+              "temporal": "current",
+              "modality": "hedged",
+              "evidence": "I think I might be allergic to shellfish"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R9",
+              "outcome": "apply+confirm",
+              "reason": "hedged tightening: enforced now, durable change needs confirmation"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "past-diet-is-not-dropped",
+      "repeat": 1,
+      "turns": [
+        {
+          "say": "I'm vegetarian.",
+          "reply": "Every visit: diet: vegetarian.\n\nThanks \u2014 I\u2019ll stick to vegetarian options from now on. If you want, I can suggest a starter, main, or dessert.",
+          "latency_s": 2.136,
+          "failed": [],
+          "changes": [
+            "diet: vegetarian"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "diet",
+              "polarity": "assert",
+              "subject": null,
+              "value": "vegetarian",
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I'm vegetarian"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R8",
+              "outcome": "apply",
+              "reason": "tightening applied"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        },
+        {
+          "say": "I used to be vegetarian.",
+          "reply": "Got it, you're no longer vegetarian. How do you eat now? Until you tell me, I'll keep recommendations vegetarian.",
+          "latency_s": 2.281,
+          "failed": [],
+          "changes": [],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "diet",
+              "polarity": "assert",
+              "subject": null,
+              "value": "vegetarian",
+              "temporal": "past",
+              "modality": "asserted",
+              "evidence": "I used to be vegetarian"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R1",
+              "outcome": "clarify",
+              "reason": "past statement about the stored diet; its replacement is unknown"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "allergy-then-suggestion",
+      "repeat": 1,
+      "turns": [
+        {
+          "say": "I'm allergic to soy. What main would you suggest?",
+          "reply": "Every visit: avoiding soy (allergy).\n\nFor a soy-free main, I\u2019d suggest **Chana Masala** ($12.00) or **Paneer Tikka Masala** ($15.00). **Chana Masala** is vegan and has no listed allergens, while **Paneer Tikka Masala** is vegetarian and avoids soy too. I\u2019m skipping the soy-containing mains because of your allergy.",
+          "latency_s": 2.337,
+          "failed": [],
+          "changes": [
+            "avoiding soy (allergy)"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "allergen",
+              "polarity": "assert",
+              "subject": "soy",
+              "value": null,
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I'm allergic to soy"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R8",
+              "outcome": "apply",
+              "reason": "tightening applied"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "req1-natural-preferences",
+      "repeat": 2,
+      "turns": [
+        {
+          "say": "I love spicy food, but I hate mushrooms.",
+          "reply": "Every visit: spice: hot; dislikes mushroom.\n\nI\u2019d suggest **Spicy Chicken Bowl** ($12.00) for the strongest spice match, or **Green Curry with Chicken** ($15.00) if you want a curry-style main. If you\u2019d rather avoid any risk of mushrooms altogether, I can also point you to milder options.",
+          "latency_s": 2.667,
+          "failed": [],
+          "changes": [
+            "spice: hot",
+            "dislikes mushroom"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "spice_tolerance",
+              "polarity": "assert",
+              "subject": null,
+              "value": "hot",
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I love spicy food"
+            },
+            {
+              "attribute": "disliked_ingredient",
+              "polarity": "assert",
+              "subject": "mushroom",
+              "value": null,
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I hate mushrooms"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R6",
+              "outcome": "apply",
+              "reason": "soft preference"
+            },
+            {
+              "rule": "R6",
+              "outcome": "apply",
+              "reason": "soft preference"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "req2-main-under-15",
+      "repeat": 2,
+      "turns": [
+        {
+          "say": "What should I get for a main under $15?",
+          "reply": "For a main under your budget, I\u2019d suggest **Teriyaki Chicken Bowl** ($12.00), **Mushroom Udon** ($13.00), or **Chana Masala** ($12.00). If you want the safest no-heat option, **Mushroom Udon** is a good pick; if you want something a bit more flavorful, **Chana Masala** is a solid choice.",
+          "latency_s": 2.017,
+          "failed": [],
+          "changes": [],
+          "question": null,
+          "claims": [],
+          "decisions": [],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "req3-memory-across-visits-and-restart",
+      "repeat": 2,
+      "turns": [
+        {
+          "say": "I'm vegetarian and allergic to sesame.",
+          "reply": "Every visit: diet: vegetarian; avoiding sesame (allergy).\n\nHere are a few vegetarian, sesame-free picks: **Vegetable Spring Rolls** ($7.00), **Chana Masala** ($12.00), and **Coconut Lime Sorbet** ($6.00). If you want, I can narrow it to starter, main, or dessert.",
+          "latency_s": 2.189,
+          "failed": [],
+          "changes": [
+            "diet: vegetarian",
+            "avoiding sesame (allergy)"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "diet",
+              "polarity": "assert",
+              "subject": null,
+              "value": "vegetarian",
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I'm vegetarian"
+            },
+            {
+              "attribute": "allergen",
+              "polarity": "assert",
+              "subject": "sesame",
+              "value": null,
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "allergic to sesame"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R8",
+              "outcome": "apply",
+              "reason": "tightening applied"
+            },
+            {
+              "rule": "R8",
+              "outcome": "apply",
+              "reason": "tightening applied"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        },
+        {
+          "say": "What do you recommend?",
+          "reply": "I\u2019d suggest **Salted Edamame** ($5.00), **Vegetable Spring Rolls** ($7.00), and **Chana Masala** ($12.00): they fit vegetarian preferences and avoid sesame. If you want something milder, **Salted Edamame** and **Vegetable Spring Rolls** are both non-spicy; for a heartier main, **Chana Masala** is a good choice.",
+          "latency_s": 2.669,
+          "failed": [],
+          "changes": [],
+          "question": null,
+          "claims": [],
+          "decisions": [],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        },
+        {
+          "say": "Any dessert ideas?",
+          "reply": "Yes \u2014 I can suggest a few vegetarian desserts that avoid sesame. **Coconut Lime Sorbet** ($6.00) is a safe vegan option, **Matcha Cheesecake** ($8.00) is a rich baked choice, and **Chili Chocolate Brownie** ($7.50) has a little warmth from chili if you like that.",
+          "latency_s": 2.273,
+          "failed": [],
+          "changes": [],
+          "question": null,
+          "claims": [],
+          "decisions": [],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "req4-spice-update",
+      "repeat": 2,
+      "turns": [
+        {
+          "say": "I love spicy food.",
+          "reply": "Every visit: spice: hot.\n\nHere are a few hot options that fit your taste: **Spicy Chicken Bowl** ($12.00), **Green Curry with Chicken** ($15.00), and **Green Curry with Tofu** ($14.00).",
+          "latency_s": 2.243,
+          "failed": [],
+          "changes": [
+            "spice: hot"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "spice_tolerance",
+              "polarity": "assert",
+              "subject": null,
+              "value": "hot",
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I love spicy food"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R6",
+              "outcome": "apply",
+              "reason": "soft preference"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        },
+        {
+          "say": "I don't like spicy food anymore.",
+          "reply": "Every visit: spice preference cleared.\n\nGot it \u2014 I\u2019ll avoid spicy options from now on. If you want, I can suggest some mild starters, mains, or desserts.",
+          "latency_s": 2.236,
+          "failed": [
+            "durable spice_tolerance is None, expected 'none'"
+          ],
+          "changes": [
+            "spice preference cleared"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "spice_tolerance",
+              "polarity": "negate",
+              "subject": null,
+              "value": "hot",
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I don't like spicy food anymore"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R6",
+              "outcome": "apply",
+              "reason": "soft preference"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "req4-allergy-removal-needs-yes",
+      "repeat": 2,
+      "turns": [
+        {
+          "say": "I'm allergic to peanuts.",
+          "reply": "Every visit: avoiding peanut (allergy).\n\nThanks \u2014 I\u2019ll avoid anything with peanut. Safe choices from the menu include **Salted Edamame** ($5.00), **Vegetable Spring Rolls** ($7.00), **Crispy Mushroom Bao** ($8.00), **Mushroom Udon** ($13.00), **Chana Masala** ($12.00), and **Coconut Lime Sorbet** ($6.00).",
+          "latency_s": 2.242,
+          "failed": [],
+          "changes": [
+            "avoiding peanut (allergy)"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "allergen",
+              "polarity": "assert",
+              "subject": "peanut",
+              "value": null,
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I'm allergic to peanuts"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R8",
+              "outcome": "apply",
+              "reason": "tightening applied"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        },
+        {
+          "say": "I'm no longer allergic to peanuts.",
+          "reply": "Should I stop treating peanut as an allergy? I'll keep avoiding it until you confirm.",
+          "latency_s": 1.982,
+          "failed": [],
+          "changes": [],
+          "question": "Should I stop treating peanut as an allergy? I'll keep avoiding it until you confirm.",
+          "claims": [
+            {
+              "attribute": "allergen",
+              "polarity": "negate",
+              "subject": "peanut",
+              "value": null,
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I'm no longer allergic to peanuts"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R10",
+              "outcome": "confirm",
+              "reason": "loosening a hard restriction needs confirmation"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        },
+        {
+          "say": "Yes, please.",
+          "reply": "Every visit: no longer avoiding peanut.\n\nGot it \u2014 I\u2019ll stop avoiding peanut. If you want suggestions, I can recommend a starter, main, or dessert.",
+          "latency_s": 2.728,
+          "failed": [],
+          "changes": [
+            "no longer avoiding peanut"
+          ],
+          "question": null,
+          "claims": [],
+          "decisions": [],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "req4-unclear-answer-keeps-allergy",
+      "repeat": 2,
+      "turns": [
+        {
+          "say": "I'm allergic to peanuts.",
+          "reply": "Every visit: avoiding peanut (allergy).\n\nThanks for letting me know \u2014 I\u2019ll avoid anything with peanut. Good options for you include **Salted Edamame** ($5.00), **Mushroom Udon** ($13.00), or **Coconut Lime Sorbet** ($6.00).",
+          "latency_s": 3.703,
+          "failed": [],
+          "changes": [
+            "avoiding peanut (allergy)"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "allergen",
+              "polarity": "assert",
+              "subject": "peanut",
+              "value": null,
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I'm allergic to peanuts"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R8",
+              "outcome": "apply",
+              "reason": "tightening applied"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [
+            [
+              "recommend at most 3 different dishes"
+            ]
+          ],
+          "rejected_outputs": [
+            "{\"message\":\"Thanks for letting me know \u2014 I\u2019ll avoid anything with peanut. Good options for you include [[item:S1]], [[item:S3]], [[item:M7]], or [[item:D3]].\",\"recommend\":[\"S1\",\"S3\",\"M7\",\"D3\"]}"
+          ]
+        },
+        {
+          "say": "I'm not allergic to peanuts anymore.",
+          "reply": "Should I stop treating peanut as an allergy? I'll keep avoiding it until you confirm.",
+          "latency_s": 2.105,
+          "failed": [],
+          "changes": [],
+          "question": "Should I stop treating peanut as an allergy? I'll keep avoiding it until you confirm.",
+          "claims": [
+            {
+              "attribute": "allergen",
+              "polarity": "negate",
+              "subject": "peanut",
+              "value": null,
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I'm not allergic to peanuts anymore"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R10",
+              "outcome": "confirm",
+              "reason": "loosening a hard restriction needs confirmation"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        },
+        {
+          "say": "Hmm, I'm honestly not sure.",
+          "reply": "I\u2019m not sure what you want me to change yet, so I\u2019ll keep treating peanut as an allergy for now. If you want, I can suggest a few safe choices next.",
+          "latency_s": 2.942,
+          "failed": [],
+          "changes": [],
+          "question": "Should I stop treating peanut as an allergy? I'll keep avoiding it until you confirm.",
+          "claims": [],
+          "decisions": [],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "req5-customers-kept-separate",
+      "repeat": 2,
+      "turns": [
+        {
+          "say": "I'm allergic to shellfish.",
+          "reply": "Every visit: avoiding shellfish (allergy).\n\nThanks \u2014 I\u2019ll avoid shellfish. A safe starter option is **Salted Edamame** ($5.00), and for a main you could choose **Mushroom Udon** ($13.00) or **Chana Masala** ($12.00). If you want dessert too, **Coconut Lime Sorbet** ($6.00) is also suitable.",
+          "latency_s": 2.418,
+          "failed": [],
+          "changes": [
+            "avoiding shellfish (allergy)"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "allergen",
+              "polarity": "assert",
+              "subject": "shellfish",
+              "value": null,
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I'm allergic to shellfish"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R8",
+              "outcome": "apply",
+              "reason": "tightening applied"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        },
+        {
+          "say": "What do you recommend?",
+          "reply": "I\u2019d suggest **Mushroom Udon** ($13.00), **Teriyaki Chicken Bowl** ($12.00), and **Coconut Lime Sorbet** ($6.00): one comforting noodle main, one mild chicken bowl, and a light dessert. If you want, I can narrow it down by starter, main, or dessert.",
+          "latency_s": 2.182,
+          "failed": [],
+          "changes": [],
+          "question": null,
+          "claims": [],
+          "decisions": [],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "tonight-only",
+      "repeat": 2,
+      "turns": [
+        {
+          "say": "I love spicy food.",
+          "reply": "Every visit: spice: hot.\n\nGreat \u2014 I\u2019d point you to these hot options: **Spicy Chicken Bowl** ($12.00), **Green Curry with Chicken** ($15.00), and **Green Curry with Tofu** ($14.00).",
+          "latency_s": 3.674,
+          "failed": [],
+          "changes": [
+            "spice: hot"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "spice_tolerance",
+              "polarity": "assert",
+              "subject": null,
+              "value": "hot",
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I love spicy food"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R6",
+              "outcome": "apply",
+              "reason": "soft preference"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        },
+        {
+          "say": "Nothing spicy tonight, please.",
+          "reply": "Just this conversation: spice: none.\n\nUnderstood \u2014 I\u2019ll stick to items with no spice. Good matches are **Teriyaki Chicken Bowl** ($12.00), **Mushroom Udon** ($13.00), and **Coconut Lime Sorbet** ($6.00).",
+          "latency_s": 2.271,
+          "failed": [],
+          "changes": [
+            "spice: none (this conversation)"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "spice_tolerance",
+              "polarity": "assert",
+              "subject": null,
+              "value": "none",
+              "temporal": "conversation",
+              "modality": "asserted",
+              "evidence": "Nothing spicy tonight, please"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R6",
+              "outcome": "apply",
+              "reason": "soft preference"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        },
+        {
+          "say": "What do you suggest?",
+          "reply": "I\u2019d suggest **Spicy Chicken Bowl** ($12.00), **Green Curry with Chicken** ($15.00), and **Chicken Satay** ($9.00) since they fit your hot spice preference; if you want a starter with your main, **Chicken Satay** is a solid pick. If you\u2019d rather skip the starter, the two mains are the strongest matches.",
+          "latency_s": 3.948,
+          "failed": [],
+          "changes": [],
+          "question": null,
+          "claims": [],
+          "decisions": [],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "nuts-means-both",
+      "repeat": 2,
+      "turns": [
+        {
+          "say": "I'm allergic to nuts.",
+          "reply": "Every visit: avoiding peanut (allergy); avoiding tree nut (allergy).\n\nThanks for letting me know \u2014 I\u2019ll avoid peanut and tree nut items. If you\u2019d like, I can suggest a safe starter, main, or dessert.",
+          "latency_s": 2.474,
+          "failed": [],
+          "changes": [
+            "avoiding peanut (allergy)",
+            "avoiding tree nut (allergy)"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "allergen",
+              "polarity": "assert",
+              "subject": "peanut",
+              "value": null,
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I'm allergic to nuts."
+            },
+            {
+              "attribute": "allergen",
+              "polarity": "assert",
+              "subject": "tree_nut",
+              "value": null,
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I'm allergic to nuts."
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R8",
+              "outcome": "apply",
+              "reason": "tightening applied"
+            },
+            {
+              "rule": "R8",
+              "outcome": "apply",
+              "reason": "tightening applied"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "companion-allergy-tonight",
+      "repeat": 2,
+      "turns": [
+        {
+          "say": "My son has a sesame allergy and he's joining me for dinner tonight.",
+          "reply": "Just this conversation: avoiding sesame (allergy).\n\nI\u2019ve noted the sesame allergy for this conversation. A few choices that avoid sesame are **Salted Edamame** ($5.00), **Vegetable Spring Rolls** ($7.00), **Mushroom Udon** ($13.00), **Chana Masala** ($12.00), and **Coconut Lime Sorbet** ($6.00); if you want, I can narrow these to starter, main, or dessert.",
+          "latency_s": 2.49,
+          "failed": [],
+          "changes": [
+            "avoiding sesame (allergy) (this conversation)"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "allergen",
+              "polarity": "assert",
+              "subject": "sesame",
+              "value": null,
+              "temporal": "conversation",
+              "modality": "asserted",
+              "evidence": "My son has a sesame allergy and he's joining me for dinner tonight"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R8",
+              "outcome": "apply",
+              "reason": "tightening applied"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "question-saves-nothing",
+      "repeat": 2,
+      "turns": [
+        {
+          "say": "Does the pad thai have peanuts?",
+          "reply": "Yes \u2014 **Tofu Pad Thai** ($14.00) includes peanut among its ingredients. If you\u2019d like, I can suggest a different main without peanuts.",
+          "latency_s": 2.145,
+          "failed": [],
+          "changes": [],
+          "question": null,
+          "claims": [],
+          "decisions": [],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "hedged-allergy-enforced-and-asked",
+      "repeat": 2,
+      "turns": [
+        {
+          "say": "I think I might be allergic to shellfish.",
+          "reply": "Just this conversation: avoiding shellfish (allergy).\n\nI\u2019ll avoid shellfish for this conversation. Should I save shellfish as an allergy for future visits? If you want, I can suggest a few safe options from the menu.\n\n- **Salted Edamame** ($5.00)\n- **Chana Masala** ($12.00)\n- **Coconut Lime Sorbet** ($6.00)",
+          "latency_s": 2.535,
+          "failed": [],
+          "changes": [
+            "avoiding shellfish (allergy) (this conversation)"
+          ],
+          "question": "Should I save shellfish as an allergy for future visits?",
+          "claims": [
+            {
+              "attribute": "allergen",
+              "polarity": "assert",
+              "subject": "shellfish",
+              "value": null,
+              "temporal": "current",
+              "modality": "hedged",
+              "evidence": "I think I might be allergic to shellfish"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R9",
+              "outcome": "apply+confirm",
+              "reason": "hedged tightening: enforced now, durable change needs confirmation"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "past-diet-is-not-dropped",
+      "repeat": 2,
+      "turns": [
+        {
+          "say": "I'm vegetarian.",
+          "reply": "Every visit: diet: vegetarian.\n\nI can suggest vegetarian options across starters, mains, and desserts. If you want, I can narrow it down by spice level or whether you want something light or filling.\n\n- **Salted Edamame** ($5.00)\n- **Mushroom Udon** ($13.00)\n- **Coconut Lime Sorbet** ($6.00)",
+          "latency_s": 2.204,
+          "failed": [],
+          "changes": [
+            "diet: vegetarian"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "diet",
+              "polarity": "assert",
+              "subject": null,
+              "value": "vegetarian",
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I'm vegetarian"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R8",
+              "outcome": "apply",
+              "reason": "tightening applied"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        },
+        {
+          "say": "I used to be vegetarian.",
+          "reply": "I\u2019ve kept your vegetarian preference in mind. Good options are **Vegetable Spring Rolls** ($7.00), **Tofu Pad Thai** ($14.00), and **Mango Sticky Rice** ($7.00); if you want, I can also suggest something milder or something more filling.",
+          "latency_s": 2.296,
+          "failed": [],
+          "changes": [],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "diet",
+              "polarity": "negate",
+              "subject": null,
+              "value": "vegetarian",
+              "temporal": "past",
+              "modality": "asserted",
+              "evidence": "I used to be vegetarian"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R2",
+              "outcome": "noop",
+              "reason": "past statement; no state change"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    },
+    {
+      "id": "allergy-then-suggestion",
+      "repeat": 2,
+      "turns": [
+        {
+          "say": "I'm allergic to soy. What main would you suggest?",
+          "reply": "Every visit: avoiding soy (allergy).\n\nFor a soy-free main, I\u2019d suggest **Chana Masala** ($12.00); it has no listed allergens and is medium-spiced. If you\u2019d like, I can also suggest a soy-free starter or dessert.",
+          "latency_s": 2.252,
+          "failed": [],
+          "changes": [
+            "avoiding soy (allergy)"
+          ],
+          "question": null,
+          "claims": [
+            {
+              "attribute": "allergen",
+              "polarity": "assert",
+              "subject": "soy",
+              "value": null,
+              "temporal": "current",
+              "modality": "asserted",
+              "evidence": "I'm allergic to soy"
+            }
+          ],
+          "decisions": [
+            {
+              "rule": "R8",
+              "outcome": "apply",
+              "reason": "tightening applied"
+            }
+          ],
+          "extract_error": null,
+          "fallback": false,
+          "reply_errors": [],
+          "rejected_outputs": []
+        }
+      ]
+    }
+  ]
+}

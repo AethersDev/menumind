@@ -1,0 +1,1447 @@
+{
+  "model": "gpt-5.4-mini",
+  "tokens": {
+    "input": 36563,
+    "output": 2055
+  },
+  "cost_usd": null,
+  "extractor": {
+    "summary": {
+      "runs": 32,
+      "restriction_recall": {
+        "active": {
+          "covered": 10,
+          "total": 10,
+          "recall": 1.0
+        },
+        "durable": {
+          "covered": 8,
+          "total": 8,
+          "recall": 1.0
+        }
+      },
+      "unsafe_loosening_errors": {
+        "applied": 0,
+        "proposed": 0
+      },
+      "spurious_restrictions": 0,
+      "decision_accuracy": 0.969,
+      "exact_claim_accuracy": 0.812,
+      "invalid_output_rate": 0.0,
+      "latency_s": {
+        "mean": 1.223,
+        "p50": 1.22,
+        "p95": 1.512
+      },
+      "tokens": {
+        "input": 32806,
+        "output": 1844
+      },
+      "missed": [],
+      "unsafe_applied": [],
+      "unsafe_proposed": [],
+      "spurious": [],
+      "decision_mismatches": [
+        "ing-25-not-today"
+      ]
+    },
+    "rows": [
+      {
+        "id": "veg-01-now",
+        "utterance": "I'm vegetarian now.",
+        "valid": true,
+        "error": null,
+        "exact": true,
+        "decision_match": true,
+        "units": [
+          [
+            "active",
+            "diet",
+            "vegetarian"
+          ],
+          [
+            "durable",
+            "diet",
+            "vegetarian"
+          ]
+        ],
+        "missed": [],
+        "unsafe_applied": [],
+        "unsafe_proposed": [],
+        "spurious": [],
+        "proposals": {
+          "expected": [],
+          "predicted": []
+        },
+        "predicted": [
+          {
+            "attribute": "diet",
+            "polarity": "assert",
+            "subject": null,
+            "value": "vegetarian",
+            "temporal": "current",
+            "modality": "asserted"
+          }
+        ],
+        "latency_s": 1.7498,
+        "input_tokens": 1021,
+        "output_tokens": 47,
+        "repeat": 0
+      },
+      {
+        "id": "veg-02-prefer-today",
+        "utterance": "I'd prefer something vegetarian today.",
+        "valid": true,
+        "error": null,
+        "exact": true,
+        "decision_match": true,
+        "units": [],
+        "missed": [],
+        "unsafe_applied": [],
+        "unsafe_proposed": [],
+        "spurious": [],
+        "proposals": {
+          "expected": [],
+          "predicted": []
+        },
+        "predicted": [
+          {
+            "attribute": "diet_lean",
+            "polarity": "assert",
+            "subject": null,
+            "value": "vegetarian",
+            "temporal": "conversation",
+            "modality": "asserted"
+          }
+        ],
+        "latency_s": 1.4259,
+        "input_tokens": 1023,
+        "output_tokens": 51,
+        "repeat": 0
+      },
+      {
+        "id": "veg-03-less-meat",
+        "utterance": "I'm trying to eat less meat.",
+        "valid": true,
+        "error": null,
+        "exact": false,
+        "decision_match": true,
+        "units": [],
+        "missed": [],
+        "unsafe_applied": [],
+        "unsafe_proposed": [],
+        "spurious": [],
+        "proposals": {
+          "expected": [],
+          "predicted": []
+        },
+        "predicted": [
+          {
+            "attribute": "diet_lean",
+            "polarity": "assert",
+            "subject": null,
+            "value": "vegetarian",
+            "temporal": "aspirational",
+            "modality": "asserted"
+          }
+        ],
+        "latency_s": 1.2856,
+        "input_tokens": 1024,
+        "output_tokens": 54,
+        "repeat": 0
+      },
+      {
+        "id": "veg-04-used-to-active",
+        "utterance": "I used to be vegetarian.",
+        "valid": true,
+        "error": null,
+        "exact": true,
+        "decision_match": true,
+        "units": [],
+        "missed": [],
+        "unsafe_applied": [],
+        "unsafe_proposed": [],
+        "spurious": [],
+        "proposals": {
+          "expected": [],
+          "predicted": []
+        },
+        "predicted": [
+          {
+            "attribute": "diet",
+            "polarity": "assert",
+            "subject": null,
+            "value": "vegetarian",
+            "temporal": "past",
+            "modality": "asserted"
+          }
+        ],
+        "latency_s": 1.3888,
+        "input_tokens": 1023,
+        "output_tokens": 49,
+        "repeat": 0
+      },
+      {
+        "id": "veg-05-used-to-inactive",
+        "utterance": "I used to be vegetarian back in college.",
+        "valid": true,
+        "error": null,
+        "exact": true,
+        "decision_match": true,
+        "units": [],
+        "missed": [],
+        "unsafe_applied": [],
+        "unsafe_proposed": [],
+        "spurious": [],
+        "proposals": {
+          "expected": [],
+          "predicted": []
+        },
+        "predicted": [
+          {
+            "attribute": "diet",
+            "polarity": "assert",
+            "subject": null,
+            "value": "vegetarian",
+            "temporal": "past",
+            "modality": "asserted"
+          }
+        ],
+        "latency_s": 1.2039,
+        "input_tokens": 1026,
+        "output_tokens": 52,
+        "repeat": 0
+      },
+      {
+        "id": "veg-06-not-anymore",
+        "utterance": "I'm not vegetarian anymore.",
+        "valid": true,
+        "error": null,
+        "exact": true,
+        "decision_match": true,
+        "units": [],
+        "missed": [],
+        "unsafe_applied": [],
+        "unsafe_proposed": [],
+        "spurious": [],
+        "proposals": {
+          "expected": [],
+          "predicted": []
+        },
+        "predicted": [
+          {
+            "attribute": "diet",
+            "polarity": "negate",
+            "subject": null,
+            "value": "vegetarian",
+            "temporal": "current",
+            "modality": "asserted"
+          }
+        ],
+        "latency_s": 1.1823,
+        "input_tokens": 1022,
+        "output_tokens": 49,
+        "repeat": 0
+      },
+      {
+        "id": "veg-06b-not-anymore-with-replacement",
+        "utterance": "I'm not vegetarian anymore; I eat everything.",
+        "valid": true,
+        "error": null,
+        "exact": false,
+        "decision_match": true,
+        "units": [],
+        "missed": [],
+        "unsafe_applied": [],
+        "unsafe_proposed": [],
+        "spurious": [],
+        "proposals": {
+          "expected": [],
+          "predicted": []
+        },
+        "predicted": [
+          {
+            "attribute": "diet",
+            "polarity": "assert",
+            "subject": null,
+            "value": "omnivore",
+            "temporal": "current",
+            "modality": "asserted"
+          },
+          {
+            "attribute": "diet",
+            "polarity": "negate",
+            "subject": null,
+            "value": "vegetarian",
+            "temporal": "current",
+            "modality": "asserted"
+          }
+        ],
+        "latency_s": 1.5117,
+        "input_tokens": 1026,
+        "output_tokens": 85,
+        "repeat": 0
+      },
+      {
+        "id": "veg-07-vegan-to-vegetarian",
+        "utterance": "I've switched from vegan to just vegetarian.",
+        "valid": true,
+        "error": null,
+        "exact": true,
+        "decision_match": true,
+        "units": [],
+        "missed": [],
+        "unsafe_applied": [],
+        "unsafe_proposed": [],
+        "spurious": [],
+        "proposals": {
+          "expected": [],
+          "predicted": []
+        },
+        "predicted": [
+          {
+            "attribute": "diet",
+            "polarity": "assert",
+            "subject": null,
+            "value": "vegetarian",
+            "temporal": "current",
+            "modality": "asserted"
+          }
+        ],
+        "latency_s": 1.2256,
+        "input_tokens": 1025,
+        "output_tokens": 51,
+        "repeat": 0
+      },
+      {
+        "id": "veg-08-might-go",
+        "utterance": "I think I might go vegetarian at some point.",
+        "valid": true,
+        "error": null,
+        "exact": false,
+        "decision_match": true,
+        "units": [],
+        "missed": [],
+        "unsafe_applied": [],
+        "unsafe_proposed": [],
+        "spurious": [],
+        "proposals": {
+          "expected": [],
+          "predicted": []
+        },
+        "predicted": [
+          {
+            "attribute": "diet_lean",
+            "polarity": "assert",
+            "subject": null,
+            "value": "vegetarian",
+            "temporal": "hypothetical",
+            "modality": "hedged"
+          }
+        ],
+        "latency_s": 1.139,
+        "input_tokens": 1027,
+        "output_tokens": 57,
+        "repeat": 0
+      },
+      {
+        "id": "diet-09-pescatarian",
+        "utterance": "I eat fish, but no other meat.",
+        "valid": true,
+        "error": null,
+        "exact": true,
+        "decision_match": true,
+        "units": [
+          [
+            "active",
+            "diet",
+            "pescatarian"
+          ],
+          [
+            "durable",
+            "diet",
+            "pescatarian"
+          ]
+        ],
+        "missed": [],
+        "unsafe_applied": [],
+        "unsafe_proposed": [],
+        "spurious": [],
+        "proposals": {
+          "expected": [],
+          "predicted": []
+        },
+        "predicted": [
+          {
+            "attribute": "diet",
+            "polarity": "assert",
+            "subject": null,
+            "value": "pescatarian",
+            "temporal": "current",
+            "modality": "asserted"
+          }
+        ],
+        "latency_s": 1.2053,
+        "input_tokens": 1026,
+        "output_tokens": 54,
+        "repeat": 0
+      },
+      {
+        "id": "diet-10-vegan-tighten",
+        "utterance": "I've gone fully vegan.",
+        "valid": true,
+        "error": null,
+        "exact": true,
+        "decision_match": true,
+        "units": [
+          [
+            "active",
+            "diet",
+            "vegan"
+          ],
+          [
+            "durable",
+            "diet",
+            "vegan"
+          ]
+        ],
+        "missed": [],
+        "unsafe_applied": [],
+        "unsafe_proposed": [],
+        "spurious": [],
+        "proposals": {
+          "expected": [],
+          "predicted": []
+        },
+        "predicted": [
+          {
+            "attribute": "diet",
+            "polarity": "assert",
+            "subject": null,
+            "value": "vegan",
+            "temporal": "current",
+            "modality": "asserted"
+          }
+        ],
+        "latency_s": 1.2432,
+        "input_tokens": 1022,
+        "output_tokens": 48,
+        "repeat": 0
+      },
+      {
+        "id": "alg-11-two-allergens",
+        "utterance": "I'm allergic to peanuts and sesame.",
+        "valid": true,
+        "error": null,
+        "exact": true,
+        "decision_match": true,
+        "units": [
+          [
+            "active",
+            "allergen",
+            "peanut"
+          ],
+          [
+            "active",
+            "allergen",
+            "sesame"
+          ],
+          [
+            "durable",
+            "allergen",
+            "peanut"
+          ],
+          [
+            "durable",
+            "allergen",
+            "sesame"
+          ]
+        ],
+        "missed": [],
+        "unsafe_applied": [],
+        "unsafe_proposed": [],
+        "spurious": [],
+        "proposals": {
+          "expected": [],
+          "predicted": []
+        },
+        "predicted": [
+          {
+            "attribute": "allergen",
+            "polarity": "assert",
+            "subject": "peanut",
+            "value": null,
+            "temporal": "current",
+            "modality": "asserted"
+          },
+          {
+            "attribute": "allergen",
+            "polarity": "assert",
+            "subject": "sesame",
+            "value": null,
+            "temporal": "current",
+            "modality": "asserted"
+          }
+        ],
+        "latency_s": 1.3871,
+        "input_tokens": 1024,
+        "output_tokens": 85,
+        "repeat": 0
+      },
+      {
+        "id": "alg-12-no-longer-peanut",
+        "utterance": "I'm no longer allergic to peanuts.",
+        "valid": true,
+        "error": null,
+        "exact": true,
+        "decision_match": true,
+        "units": [],
+        "missed": [],
+        "unsafe_applied": [],
+        "unsafe_proposed": [],
+        "spurious": [],
+        "proposals": {
+          "expected": [
+            [
+              "allergen",
+              "peanut",
+              "REMOVE",
+              null,
+              "durable"
+            ]
+          ],
+          "predicted": [
+            [
+              "allergen",
+              "peanut",
+              "REMOVE",
+              null,
+              "durable"
+            ]
+          ]
+        },
+        "predicted": [
+          {
+            "attribute": "allergen",
+            "polarity": "negate",
+            "subject": "peanut",
+            "value": null,
+            "temporal": "current",
+            "modality": "asserted"
+          }
+        ],
+        "latency_s": 1.2373,
+        "input_tokens": 1024,
+        "output_tokens": 52,
+        "repeat": 0
+      },
+      {
+        "id": "alg-13-might-be-gone",
+        "utterance": "My peanut allergy might be gone.",
+        "valid": true,
+        "error": null,
+        "exact": true,
+        "decision_match": true,
+        "units": [],
+        "missed": [],
+        "unsafe_applied": [],
+        "unsafe_proposed": [],
+        "spurious": [],
+        "proposals": {
+          "expected": [
+            [
+              "allergen",
+              "peanut",
+              "REMOVE",
+              null,
+              "durable"
+            ]
+          ],
+          "predicted": [
+            [
+              "allergen",
+              "peanut",
+              "REMOVE",
+              null,
+              "durable"
+            ]
+          ]
+        },
+        "predicted": [
+          {
+            "attribute": "allergen",
+            "polarity": "negate",
+            "subject": "peanut",
+            "value": null,
+            "temporal": "current",
+            "modality": "hedged"
+          }
+        ],
+        "latency_s": 1.2565,
+        "input_tokens": 1024,
+        "output_tokens": 52,
+        "repeat": 0
+      },
+      {
+        "id": "alg-14-outgrew",
+        "utterance": "I used to be allergic to shellfish but I outgrew it.",
+        "valid": true,
+        "error": null,
+        "exact": true,
+        "decision_match": true,
+        "units": [],
+        "missed": [],
+        "unsafe_applied": [],
+        "unsafe_proposed": [],
+        "spurious": [],
+        "proposals": {
+          "expected": [
+            [
+              "allergen",
+              "shellfish",
+              "REMOVE",
+              null,
+              "durable"
+            ]
+          ],
+          "predicted": [
+            [
+              "allergen",
+              "shellfish",
+              "REMOVE",
+              null,
+              "durable"
+            ]
+          ]
+        },
+        "predicted": [
+          {
+            "attribute": "allergen",
+            "polarity": "negate",
+            "subject": "shellfish",
+            "value": null,
+            "temporal": "current",
+            "modality": "asserted"
+          }
+        ],
+        "latency_s": 1.22,
+        "input_tokens": 1032,
+        "output_tokens": 60,
+        "repeat": 0
+      },
+      {
+        "id": "alg-15-might-be-allergic",
+        "utterance": "I think I might be allergic to shellfish.",
+        "valid": true,
+        "error": null,
+        "exact": true,
+        "decision_match": true,
+        "units": [
+          [
+            "active",
+            "allergen",
+            "shellfish"
+          ]
+        ],
+        "missed": [],
+        "unsafe_applied": [],
+        "unsafe_proposed": [],
+        "spurious": [],
+        "proposals": {
+          "expected": [
+            [
+              "allergen",
+              "shellfish",
+              "SET",
+              null,
+              "durable"
+            ]
+          ],
+          "predicted": [
+            [
+              "allergen",
+              "shellfish",
+              "SET",
+              null,
+              "durable"
+            ]
+          ]
+        },
+        "predicted": [
+          {
+            "attribute": "allergen",
+            "polarity": "assert",
+            "subject": "shellfish",
+            "value": null,
+            "temporal": "current",
+            "modality": "hedged"
+          }
+        ],
+        "latency_s": 1.1744,
+        "input_tokens": 1027,
+        "output_tokens": 54,
+        "repeat": 0
+      },
+      {
+        "id": "alg-16-companion",
+        "utterance": "My daughter's allergic to tree nuts and she's eating with me tonight.",
+        "valid": true,
+        "error": null,
+        "exact": true,
+        "decision_match": true,
+        "units": [
+          [
+            "active",
+            "allergen",
+            "tree_nut"
+          ]
+        ],
+        "missed": [],
+        "unsafe_applied": [],
+        "unsafe_proposed": [],
+        "spurious": [],
+        "proposals": {
+          "expected": [],
+          "predicted": []
+        },
+        "predicted": [
+          {
+            "attribute": "allergen",
+            "polarity": "assert",
+            "subject": "tree_nut",
+            "value": null,
+            "temporal": "conversation",
+            "modality": "asserted"
+          }
+        ],
+        "latency_s": 1.2156,
+        "input_tokens": 1030,
+        "output_tokens": 59,
+        "repeat": 0
+      },
+      {
+        "id": "alg-17-ambiguous-nuts",
+        "utterance": "I'm allergic to nuts.",
+        "valid": true,
+        "error": null,
+        "exact": true,
+        "decision_match": true,
+        "units": [
+          [
+            "active",
+            "allergen",
+            "peanut"
+          ],
+          [
+            "active",
+            "allergen",
+            "tree_nut"
+          ],
+          [
+            "durable",
+            "allergen",
+            "peanut"
+          ],
+          [
+            "durable",
+            "allergen",
+            "tree_nut"
+          ]
+        ],
+        "missed": [],
+        "unsafe_applied": [],
+        "unsafe_proposed": [],
+        "spurious": [],
+        "proposals": {
+          "expected": [],
+          "predicted": []
+        },
+        "predicted": [
+          {
+            "attribute": "allergen",
+            "polarity": "assert",
+            "subject": "peanut",
+            "value": null,
+            "temporal": "current",
+            "modality": "asserted"
+          },
+          {
+            "attribute": "allergen",
+            "polarity": "assert",
+            "subject": "tree_nut",
+            "value": null,
+            "temporal": "current",
+            "modality": "asserted"
+          }
+        ],
+        "latency_s": 1.2495,
+        "input_tokens": 1022,
+        "output_tokens": 90,
+        "repeat": 0
+      },
+      {
+        "id": "alg-18-correction",
+        "utterance": "Peanuts are fine actually, I was thinking of cashews.",
+        "valid": true,
+        "error": null,
+        "exact": true,
+        "decision_match": true,
+        "units": [
+          [
+            "active",
+            "allergen",
+            "tree_nut"
+          ],
+          [
+            "durable",
+            "allergen",
+            "tree_nut"
+          ]
+        ],
+        "missed": [],
+        "unsafe_applied": [],
+        "unsafe_proposed": [],
+        "spurious": [],
+        "proposals": {
+          "expected": [
+            [
+              "allergen",
+              "peanut",
+              "REMOVE",
+              null,
+              "durable"
+            ]
+          ],
+          "predicted": [
+            [
+              "allergen",
+              "peanut",
+              "REMOVE",
+              null,
+              "durable"
+            ]
+          ]
+        },
+        "predicted": [
+          {
+            "attribute": "allergen",
+            "polarity": "negate",
+            "subject": "peanut",
+            "value": null,
+            "temporal": "current",
+            "modality": "asserted"
+          },
+          {
+            "attribute": "allergen",
+            "polarity": "assert",
+            "subject": "tree_nut",
+            "value": null,
+            "temporal": "current",
+            "modality": "asserted"
+          }
+        ],
+        "latency_s": 1.3915,
+        "input_tokens": 1030,
+        "output_tokens": 92,
+        "repeat": 0
+      },
+      {
+        "id": "alg-19-still-allergic",
+        "utterance": "Still allergic to peanuts, by the way.",
+        "valid": true,
+        "error": null,
+        "exact": true,
+        "decision_match": true,
+        "units": [],
+        "missed": [],
+        "unsafe_applied": [],
+        "unsafe_proposed": [],
+        "spurious": [],
+        "proposals": {
+          "expected": [],
+          "predicted": []
+        },
+        "predicted": [
+          {
+            "attribute": "allergen",
+            "polarity": "assert",
+            "subject": "peanut",
+            "value": null,
+            "temporal": "current",
+            "modality": "asserted"
+          }
+        ],
+        "latency_s": 1.0682,
+        "input_tokens": 1026,
+        "output_tokens": 54,
+        "repeat": 0
+      },
+      {
+        "id": "spice-19-love-hate",
+        "utterance": "I love spicy food, but I hate mushrooms.",
+        "valid": true,
+        "error": null,
+        "exact": true,
+        "decision_match": true,
+        "units": [],
+        "missed": [],
+        "unsafe_applied": [],
+        "unsafe_proposed": [],
+        "spurious": [],
+        "proposals": {
+          "expected": [],
+          "predicted": []
+        },
+        "predicted": [
+          {
+            "attribute": "spice_tolerance",
+            "polarity": "assert",
+            "subject": null,
+            "value": "hot",
+            "temporal": "current",
+            "modality": "asserted"
+          },
+          {
+            "attribute": "disliked_ingredient",
+            "polarity": "assert",
+            "subject": "mushroom",
+            "value": null,
+            "temporal": "current",
+            "modality": "asserted"
+          }
+        ],
+        "latency_s": 1.2197,
+        "input_tokens": 1027,
+        "output_tokens": 90,
+        "repeat": 0
+      },
+      {
+        "id": "spice-20-tonight",
+        "utterance": "Nothing spicy tonight.",
+        "valid": true,
+        "error": null,
+        "exact": true,
+        "decision_match": true,
+        "units": [],
+        "missed": [],
+        "unsafe_applied": [],
+        "unsafe_proposed": [],
+        "spurious": [],
+        "proposals": {
+          "expected": [],
+          "predicted": []
+        },
+        "predicted": [
+          {
+            "attribute": "spice_tolerance",
+            "polarity": "assert",
+            "subject": null,
+            "value": "none",
+            "temporal": "conversation",
+            "modality": "asserted"
+          }
+        ],
+        "latency_s": 1.2677,
+        "input_tokens": 1021,
+        "output_tokens": 49,
+        "repeat": 0
+      },
+      {
+        "id": "spice-21-anymore",
+        "utterance": "I don't like spicy food anymore.",
+        "valid": true,
+        "error": null,
+        "exact": true,
+        "decision_match": true,
+        "units": [],
+        "missed": [],
+        "unsafe_applied": [],
+        "unsafe_proposed": [],
+        "spurious": [],
+        "proposals": {
+          "expected": [],
+          "predicted": []
+        },
+        "predicted": [
+          {
+            "attribute": "spice_tolerance",
+            "polarity": "assert",
+            "subject": null,
+            "value": "none",
+            "temporal": "current",
+            "modality": "asserted"
+          }
+        ],
+        "latency_s": 1.3672,
+        "input_tokens": 1024,
+        "output_tokens": 52,
+        "repeat": 0
+      },
+      {
+        "id": "spice-22-medium-fine",
+        "utterance": "Actually, medium spice is fine.",
+        "valid": true,
+        "error": null,
+        "exact": true,
+        "decision_match": true,
+        "units": [],
+        "missed": [],
+        "unsafe_applied": [],
+        "unsafe_proposed": [],
+        "spurious": [],
+        "proposals": {
+          "expected": [],
+          "predicted": []
+        },
+        "predicted": [
+          {
+            "attribute": "spice_tolerance",
+            "polarity": "assert",
+            "subject": null,
+            "value": "medium",
+            "temporal": "current",
+            "modality": "asserted"
+          }
+        ],
+        "latency_s": 0.9661,
+        "input_tokens": 1024,
+        "output_tokens": 50,
+        "repeat": 0
+      },
+      {
+        "id": "spice-23-used-to-love",
+        "utterance": "I used to love spicy food.",
+        "valid": true,
+        "error": null,
+        "exact": true,
+        "decision_match": true,
+        "units": [],
+        "missed": [],
+        "unsafe_applied": [],
+        "unsafe_proposed": [],
+        "spurious": [],
+        "proposals": {
+          "expected": [],
+          "predicted": []
+        },
+        "predicted": [
+          {
+            "attribute": "spice_tolerance",
+            "polarity": "assert",
+            "subject": null,
+            "value": "hot",
+            "temporal": "past",
+            "modality": "asserted"
+          }
+        ],
+        "latency_s": 1.2341,
+        "input_tokens": 1024,
+        "output_tokens": 52,
+        "repeat": 0
+      },
+      {
+        "id": "ing-24-dont-mind",
+        "utterance": "I don't mind mushrooms actually.",
+        "valid": true,
+        "error": null,
+        "exact": true,
+        "decision_match": true,
+        "units": [],
+        "missed": [],
+        "unsafe_applied": [],
+        "unsafe_proposed": [],
+        "spurious": [],
+        "proposals": {
+          "expected": [],
+          "predicted": []
+        },
+        "predicted": [
+          {
+            "attribute": "disliked_ingredient",
+            "polarity": "negate",
+            "subject": "mushroom",
+            "value": null,
+            "temporal": "current",
+            "modality": "asserted"
+          }
+        ],
+        "latency_s": 1.0295,
+        "input_tokens": 1023,
+        "output_tokens": 54,
+        "repeat": 0
+      },
+      {
+        "id": "ing-25-not-today",
+        "utterance": "It's not that I don't like mushrooms, I just don't want them today.",
+        "valid": true,
+        "error": null,
+        "exact": false,
+        "decision_match": false,
+        "units": [],
+        "missed": [],
+        "unsafe_applied": [],
+        "unsafe_proposed": [],
+        "spurious": [],
+        "proposals": {
+          "expected": [],
+          "predicted": []
+        },
+        "predicted": [
+          {
+            "attribute": "liked_ingredient",
+            "polarity": "assert",
+            "subject": "mushroom",
+            "value": null,
+            "temporal": "conversation",
+            "modality": "asserted"
+          }
+        ],
+        "latency_s": 0.9738,
+        "input_tokens": 1032,
+        "output_tokens": 53,
+        "repeat": 0
+      },
+      {
+        "id": "bud-26-this-order",
+        "utterance": "Keep it under $15.",
+        "valid": true,
+        "error": null,
+        "exact": true,
+        "decision_match": true,
+        "units": [],
+        "missed": [],
+        "unsafe_applied": [],
+        "unsafe_proposed": [],
+        "spurious": [],
+        "proposals": {
+          "expected": [],
+          "predicted": []
+        },
+        "predicted": [
+          {
+            "attribute": "budget_max",
+            "polarity": "assert",
+            "subject": null,
+            "value": 15.0,
+            "temporal": "conversation",
+            "modality": "asserted"
+          }
+        ],
+        "latency_s": 1.1982,
+        "input_tokens": 1023,
+        "output_tokens": 49,
+        "repeat": 0
+      },
+      {
+        "id": "bud-27-standing",
+        "utterance": "I never spend more than $20 on lunch.",
+        "valid": true,
+        "error": null,
+        "exact": true,
+        "decision_match": true,
+        "units": [],
+        "missed": [],
+        "unsafe_applied": [],
+        "unsafe_proposed": [],
+        "spurious": [],
+        "proposals": {
+          "expected": [],
+          "predicted": []
+        },
+        "predicted": [
+          {
+            "attribute": "budget_max",
+            "polarity": "assert",
+            "subject": null,
+            "value": 20.0,
+            "temporal": "current",
+            "modality": "asserted"
+          }
+        ],
+        "latency_s": 1.0817,
+        "input_tokens": 1027,
+        "output_tokens": 53,
+        "repeat": 0
+      },
+      {
+        "id": "noop-28-counterfactual",
+        "utterance": "If I weren't vegetarian I'd get the lamb.",
+        "valid": true,
+        "error": null,
+        "exact": false,
+        "decision_match": true,
+        "units": [],
+        "missed": [],
+        "unsafe_applied": [],
+        "unsafe_proposed": [],
+        "spurious": [],
+        "proposals": {
+          "expected": [],
+          "predicted": []
+        },
+        "predicted": [
+          {
+            "attribute": "diet",
+            "polarity": "assert",
+            "subject": null,
+            "value": "vegetarian",
+            "temporal": "hypothetical",
+            "modality": "asserted"
+          },
+          {
+            "attribute": "liked_ingredient",
+            "polarity": "assert",
+            "subject": "lamb",
+            "value": null,
+            "temporal": "hypothetical",
+            "modality": "asserted"
+          }
+        ],
+        "latency_s": 1.1938,
+        "input_tokens": 1026,
+        "output_tokens": 91,
+        "repeat": 0
+      },
+      {
+        "id": "noop-29-third-party",
+        "utterance": "My friend is vegan, but I'm not.",
+        "valid": true,
+        "error": null,
+        "exact": false,
+        "decision_match": true,
+        "units": [],
+        "missed": [],
+        "unsafe_applied": [],
+        "unsafe_proposed": [],
+        "spurious": [],
+        "proposals": {
+          "expected": [],
+          "predicted": []
+        },
+        "predicted": [
+          {
+            "attribute": "diet",
+            "polarity": "assert",
+            "subject": null,
+            "value": "omnivore",
+            "temporal": "current",
+            "modality": "asserted"
+          }
+        ],
+        "latency_s": 1.0029,
+        "input_tokens": 1026,
+        "output_tokens": 46,
+        "repeat": 0
+      },
+      {
+        "id": "noop-30-question",
+        "utterance": "Is the pad thai made with peanuts?",
+        "valid": true,
+        "error": null,
+        "exact": true,
+        "decision_match": true,
+        "units": [],
+        "missed": [],
+        "unsafe_applied": [],
+        "unsafe_proposed": [],
+        "spurious": [],
+        "proposals": {
+          "expected": [],
+          "predicted": []
+        },
+        "predicted": [],
+        "latency_s": 0.8379,
+        "input_tokens": 1025,
+        "output_tokens": 10,
+        "repeat": 0
+      }
+    ]
+  },
+  "confirmations": {
+    "summary": {
+      "cases": 18,
+      "accuracy": 0.944,
+      "false_yes": 0,
+      "false_yes_ids": [],
+      "confusion": {
+        "yes->yes": 5,
+        "yes->unclear": 1,
+        "no->no": 6,
+        "unclear->unclear": 6
+      },
+      "latency_s": {
+        "mean": 0.847,
+        "p50": 0.838,
+        "p95": 0.928
+      },
+      "tokens": {
+        "input": 3757,
+        "output": 211
+      }
+    },
+    "rows": [
+      {
+        "id": "c01",
+        "reply": "Yes.",
+        "expected": "yes",
+        "predicted": "yes",
+        "latency_s": 0.8376,
+        "input_tokens": 208,
+        "output_tokens": 11
+      },
+      {
+        "id": "c02",
+        "reply": "yep, I outgrew it",
+        "expected": "yes",
+        "predicted": "yes",
+        "latency_s": 0.896,
+        "input_tokens": 213,
+        "output_tokens": 11
+      },
+      {
+        "id": "c03",
+        "reply": "Remove it.",
+        "expected": "yes",
+        "predicted": "yes",
+        "latency_s": 0.8209,
+        "input_tokens": 209,
+        "output_tokens": 11
+      },
+      {
+        "id": "c04",
+        "reply": "Sure, and nothing spicy tonight.",
+        "expected": "yes",
+        "predicted": "unclear",
+        "latency_s": 0.9253,
+        "input_tokens": 213,
+        "output_tokens": 18
+      },
+      {
+        "id": "c05",
+        "reply": "No.",
+        "expected": "no",
+        "predicted": "no",
+        "latency_s": 0.9151,
+        "input_tokens": 208,
+        "output_tokens": 11
+      },
+      {
+        "id": "c06",
+        "reply": "No, I'm still allergic.",
+        "expected": "no",
+        "predicted": "no",
+        "latency_s": 0.9279,
+        "input_tokens": 212,
+        "output_tokens": 11
+      },
+      {
+        "id": "c07",
+        "reply": "Keep it.",
+        "expected": "no",
+        "predicted": "no",
+        "latency_s": 0.7955,
+        "input_tokens": 209,
+        "output_tokens": 11
+      },
+      {
+        "id": "c08",
+        "reply": "Nope, keep avoiding it.",
+        "expected": "no",
+        "predicted": "no",
+        "latency_s": 0.7951,
+        "input_tokens": 212,
+        "output_tokens": 11
+      },
+      {
+        "id": "c09",
+        "reply": "I guess?",
+        "expected": "unclear",
+        "predicted": "unclear",
+        "latency_s": 0.8667,
+        "input_tokens": 209,
+        "output_tokens": 12
+      },
+      {
+        "id": "c10",
+        "reply": "Hmm, I'm not totally sure.",
+        "expected": "unclear",
+        "predicted": "unclear",
+        "latency_s": 0.8192,
+        "input_tokens": 213,
+        "output_tokens": 12
+      },
+      {
+        "id": "c11",
+        "reply": "What do you mean?",
+        "expected": "unclear",
+        "predicted": "unclear",
+        "latency_s": 0.7457,
+        "input_tokens": 211,
+        "output_tokens": 12
+      },
+      {
+        "id": "c12",
+        "reply": "Actually I meant sesame, not peanuts.",
+        "expected": "unclear",
+        "predicted": "unclear",
+        "latency_s": 0.8811,
+        "input_tokens": 214,
+        "output_tokens": 12
+      },
+      {
+        "id": "c13",
+        "reply": "Yes, save it.",
+        "expected": "yes",
+        "predicted": "yes",
+        "latency_s": 0.8327,
+        "input_tokens": 206,
+        "output_tokens": 11
+      },
+      {
+        "id": "c14",
+        "reply": "Just for tonight.",
+        "expected": "no",
+        "predicted": "no",
+        "latency_s": 0.7944,
+        "input_tokens": 205,
+        "output_tokens": 11
+      },
+      {
+        "id": "c15",
+        "reply": "Let me check with my doctor first.",
+        "expected": "unclear",
+        "predicted": "unclear",
+        "latency_s": 0.8077,
+        "input_tokens": 209,
+        "output_tokens": 12
+      },
+      {
+        "id": "c16",
+        "reply": "Yeah, for good.",
+        "expected": "yes",
+        "predicted": "yes",
+        "latency_s": 0.8795,
+        "input_tokens": 204,
+        "output_tokens": 11
+      },
+      {
+        "id": "c17",
+        "reply": "Only today.",
+        "expected": "no",
+        "predicted": "no",
+        "latency_s": 0.862,
+        "input_tokens": 202,
+        "output_tokens": 11
+      },
+      {
+        "id": "c18",
+        "reply": "probably",
+        "expected": "unclear",
+        "predicted": "unclear",
+        "latency_s": 0.8375,
+        "input_tokens": 200,
+        "output_tokens": 12
+      }
+    ]
+  }
+}
