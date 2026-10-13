@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MenuMind | Lantern Street Kitchen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #E9EFE8;
+  --paper-2: #F6F8F4;
+  --ink: #1F2A3D;
+  --ink-soft: #4D5A6E;
+  --jade: #3F7A66;
+  --amber: #D9962B;
+  --amber-soft: #F6E3BF;
+  --brick: #A8432F;
+  --rail: #B9C5BC;
+  --display: "Bricolage Grotesque", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--paper); color: var(--ink);
+  font: 17px/1.55 var(--body);
+}
+button, input, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+[hidden] { display: none !important; }
+
+/* header */
+.bar {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  padding: 14px 24px; border-bottom: 1px solid var(--rail);
+}
+.brand { font: 700 26px/1.1 var(--display); letter-spacing: -0.01em; margin: 0; }
+.bar .spacer { flex: 1; }
+.who { color: var(--ink-soft); }
+.link {
+  background: none; border: 0; padding: 6px 4px; cursor: pointer;
+  text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px;
+}
+.link:hover { color: var(--jade); }
+
+/* sign-in */
+.auth { max-width: 380px; margin: 12vh auto 0; padding: 0 20px; }
+.auth h1 { font: 700 44px/1.05 var(--display); margin: 0 0 8px; letter-spacing: -0.02em; }
+.auth p { color: var(--ink-soft); margin: 0 0 28px; }
+.field { display: block; margin-bottom: 16px; }
+.field span { display: block; font-weight: 700; margin-bottom: 4px; }
+.field input {
+  width: 100%; padding: 10px 12px; border: 1.5px solid var(--ink-soft);
+  border-radius: 6px; background: var(--paper-2);
+}
+.row { display: flex; gap: 12px; flex-wrap: wrap; }
+.btn {
+  padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: 700;
+  border: 1.5px solid var(--ink); background: var(--ink); color: var(--paper-2);
+}
+.btn.quiet { background: transparent; color: var(--ink); }
+.btn:disabled { opacity: .5; cursor: progress; }
+.error { color: var(--brick); min-height: 1.5em; margin-top: 12px; }
+.auth .by { margin-top: 40px; font-size: 15px; }
+
+/* main layout */
+.main {
+  display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 40px;
+  max-width: 1120px; margin: 0 auto; padding: 24px 24px 0;
+  height: calc(100% - 64px);
+}
+.chat { display: flex; flex-direction: column; min-height: 0; }
+.log { flex: 1; overflow-y: auto; padding-right: 8px; }
+.msg { max-width: 68ch; margin: 0 0 22px; }
+.msg.agent { border-left: 3px solid var(--jade); padding-left: 14px; }
+.msg.user {
+  margin-left: auto; width: fit-content; max-width: 56ch;
+  background: var(--paper-2); border: 1px solid var(--rail);
+  padding: 10px 14px; border-radius: 10px 10px 2px 10px;
+}
+.msg.note { color: var(--ink-soft); font-style: italic; border-left: 3px solid var(--rail); padding-left: 14px; }
+.msg.problem { color: var(--brick); border-left: 3px solid var(--brick); padding-left: 14px; }
+.msg p { margin: 0 0 6px; }
+.warn { color: var(--brick); font-weight: 700; }
+details.trace { margin-top: 8px; color: var(--ink-soft); font-size: 15px; }
+details.trace summary { cursor: pointer; }
+details.trace ul { margin: 6px 0 0; padding-left: 18px; }
+
+.composer { display: flex; gap: 10px; padding: 14px 0 20px; border-top: 1px solid var(--rail); }
+.composer textarea {
+  flex: 1; resize: none; height: 52px; padding: 12px 14px;
+  border: 1.5px solid var(--ink-soft); border-radius: 8px; background: var(--paper-2);
+}
+.composer .btn { align-self: stretch; }
+.typing { color: var(--ink-soft); font-style: italic; }
+
+/* the order ticket */
+.ticket-wrap { position: relative; padding-top: 18px; }
+.ticket-wrap::before { /* the rail */
+  content: ""; position: absolute; top: 0; left: -12px; right: -12px; height: 8px;
+  background: var(--rail); border-radius: 4px;
+}
+.ticket {
+  position: relative; background: #FFFDF7; padding: 22px 20px 34px;
+  box-shadow: 0 1px 0 var(--rail);
+  transform: rotate(-0.6deg); transform-origin: top center;
+  /* torn bottom edge */
+  -webkit-mask: radial-gradient(7px at 50% 100%, transparent 98%, #000) 0 0 / 16px 100%;
+          mask: radial-gradient(7px at 50% 100%, transparent 98%, #000) 0 0 / 16px 100%;
+}
+.ticket-wrap::after { /* the clip holding the ticket to the rail */
+  content: ""; position: absolute; top: 2px; left: 50%; width: 46px; height: 24px;
+  margin-left: -23px; background: var(--ink-soft); border-radius: 3px; z-index: 1;
+}
+.ticket h2 { font: 700 21px/1.2 var(--display); margin: 0 0 4px; }
+.ticket .for { color: var(--ink-soft); margin: 0 0 16px; font-size: 15px; }
+.ticket h3 { font: 500 16px/1.3 var(--display); margin: 18px 0 6px; }
+.ticket ul { list-style: none; margin: 0; padding: 0; }
+.ticket li { padding: 4px 0 4px 16px; position: relative; }
+.ticket li::before { content: ""; position: absolute; left: 0; top: 13px; width: 7px; height: 7px; border-radius: 50%; background: var(--jade); }
+.ticket .visit li::before { background: var(--amber); }
+.ticket .empty { color: var(--ink-soft); font-style: italic; padding-left: 0; }
+.ticket .empty::before { display: none; }
+.ticket .waiting { margin-top: 18px; background: var(--amber-soft); padding: 10px 12px; border-radius: 4px; }
+.ticket .waiting strong { display: block; }
+.ticket-toggle { display: none; }
+
+/* menu dialog */
+dialog { border: 0; border-radius: 10px; padding: 0; max-width: 640px; width: calc(100% - 32px); background: var(--paper-2); color: var(--ink); }
+dialog::backdrop { background: rgba(31, 42, 61, .45); }
+.menu-head { display: flex; align-items: center; padding: 18px 22px; border-bottom: 1px solid var(--rail); }
+.menu-head h2 { font: 700 24px/1.1 var(--display); margin: 0; flex: 1; }
+.menu-body { padding: 4px 22px 22px; max-height: 70vh; overflow-y: auto; }
+.menu-body h3 { font: 500 19px/1.2 var(--display); margin: 22px 0 6px; }
+.dish { padding: 10px 0; border-top: 1px dashed var(--rail); }
+.dish .top { display: flex; gap: 12px; }
+.dish .top strong { flex: 1; }
+.dish .meta, .dish .ing { color: var(--ink-soft); font-size: 15px; }
+
+@media (max-width: 860px) {
+  .main { grid-template-columns: 1fr; gap: 0; height: auto; padding-top: 12px; }
+  .side { order: -1; margin-bottom: 16px; }
+  .ticket-toggle { display: inline-block; margin-bottom: 8px; }
+  .ticket-wrap.collapsed { display: none; }
+  .ticket { transform: none; }
+  .log { overflow: visible; }
+  .bar { padding: 12px 16px; gap: 4px 14px; }
+  .brand { font-size: 21px; width: 100%; }
+  .bar .spacer, .who { display: none; }
+  .main { padding: 12px 16px 0; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ticket.updated { animation: nudge .5s ease; }
+  @keyframes nudge { 0% { transform: rotate(-0.6deg); } 40% { transform: rotate(1.2deg); } 100% { transform: rotate(-0.6deg); } }
+}
+</style>
+</head>
+<body>
+
+<section class="auth" id="auth" hidden>
+  <h1>Lantern Street Kitchen</h1>
+  <p>Tell us what you like once. We'll remember it next time you order.</p>
+  <form id="auth-form">
+    <label class="field"><span>Username</span>
+      <input id="username" autocomplete="username" required minlength="3" maxlength="32"></label>
+    <label class="field"><span>PIN (4 to 12 digits)</span>
+      <input id="pin" type="password" inputmode="numeric" autocomplete="current-password" required minlength="4" maxlength="12"></label>
+    <div class="row">
+      <button class="btn" type="submit" data-action="login">Sign in</button>
+      <button class="btn quiet" type="submit" data-action="register">Create account</button>
+    </div>
+    <div class="error" id="auth-error" role="alert"></div>
+  </form>
+  <p class="by">Ordering assistant by MenuMind</p>
+</section>
+
+<div id="app" hidden>
+  <header class="bar">
+    <p class="brand">Lantern Street Kitchen</p>
+    <span class="spacer"></span>
+    <span class="who" id="who"></span>
+    <button class="link" id="open-menu">Menu</button>
+    <button class="link" id="new-conv">New conversation</button>
+    <button class="link" id="logout">Sign out</button>
+  </header>
+
+  <main class="main">
+    <section class="chat" aria-label="Conversation">
+      <div class="log" id="log" aria-live="polite"></div>
+      <form class="composer" id="composer">
+        <textarea id="message" aria-label="Message" placeholder="What are you in the mood for?" required></textarea>
+        <button class="btn" id="send">Send</button>
+      </form>
+    </section>
+
+    <aside class="side">
+      <button class="link ticket-toggle" id="ticket-toggle" aria-expanded="false">Show what I remember</button>
+      <div class="ticket-wrap collapsed" id="ticket-wrap">
+        <div class="ticket" id="ticket">
+          <h2>What I remember</h2>
+          <p class="for" id="ticket-for"></p>
+          <h3>Every visit</h3>
+          <ul id="remembered"></ul>
+          <div class="visit">
+            <h3>Just this conversation</h3>
+            <ul id="this-visit"></ul>
+          </div>
+          <div class="waiting" id="waiting" hidden><strong>Waiting for your answer</strong><span id="waiting-q"></span></div>
+        </div>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<dialog id="menu">
+  <div class="menu-head"><h2 id="menu-title">Menu</h2><button class="link" id="close-menu">Close</button></div>
+  <div class="menu-body" id="menu-body"></div>
+</dialog>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+  del(k) { try { localStorage.removeItem(k); } catch {} },
+};
+let me = null, conversationId = null, busy = false;
+
+async function api(path, options = {}) {
+  const res = await fetch(path, {
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    ...options,
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw Object.assign(new Error(data.detail || `Request failed (${res.status})`), { status: res.status });
+  return data;
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+function format(text) {
+  return esc(text)
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\[(not suitable for you: [^\]]+|over your [^\]]+)\]/g, '<span class="warn">($1)</span>')
+    .split(/\n{2,}/).map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).join("");
+}
+const money = (p) => `$${Number(p).toFixed(2)}`;
+
+function add(kind, html) {
+  const el = document.createElement("div");
+  el.className = `msg ${kind}`;
+  el.innerHTML = html;
+  $("log").appendChild(el);
+  el.scrollIntoView({ block: "end", behavior: "smooth" });
+  return el;
+}
+
+function renderTicket(profile, question) {
+  $("ticket-for").textContent = me ? `For ${me.username}` : "";
+  const fill = (ul, items, empty) => {
+    ul.innerHTML = items.length ? items.map((x) => `<li>${esc(x)}</li>`).join("") : `<li class="empty">${empty}</li>`;
+  };
+  fill($("remembered"), profile.remembered, "Nothing yet. Tell me what you like or can't eat.");
+  fill($("this-visit"), profile.this_conversation, "Nothing different from usual.");
+  $("waiting").hidden = !question;
+  $("waiting-q").textContent = question || "";
+  const t = $("ticket");
+  t.classList.remove("updated"); void t.offsetWidth; t.classList.add("updated");
+}
+
+function greet(profile) {
+  const name = esc(me.username);
+  if (profile.remembered.length) {
+    add("agent", `<p>Welcome back, ${name}. I still have your preferences: ${profile.remembered.map(esc).join("; ")}. ` +
+      `Want a suggestion, or has anything changed?</p>`);
+  } else {
+    add("agent", `<p>Hi ${name}. Tell me what you like, anything you can't eat, and your budget, ` +
+      `and I'll suggest dishes from the menu. I'll remember it for next time.</p>`);
+  }
+}
+
+async function startConversation(fresh) {
+  const key = `menumind_conv_${me.username}`;
+  conversationId = fresh ? null : store.get(key);
+  if (!conversationId) {
+    conversationId = (await api("/api/conversations", { method: "POST" })).conversation_id;
+    store.set(key, conversationId);
+  }
+  $("log").innerHTML = "";
+  const data = await api(`/api/me?conversation_id=${encodeURIComponent(conversationId)}`);
+  renderTicket(data.profile, data.question);
+  greet(data.profile);
+  if (data.question) add("agent", `<p>${esc(data.question)}</p>`);
+  $("message").focus();
+}
+
+function showApp() {
+  $("auth").hidden = true; $("app").hidden = false;
+  $("who").textContent = `Signed in as ${me.username}`;
+}
+function showAuth() {
+  $("app").hidden = true; $("auth").hidden = false; $("username").focus();
+}
+
+$("auth-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const action = e.submitter?.dataset.action || "login";
+  $("auth-error").textContent = "";
+  for (const b of e.target.querySelectorAll("button")) b.disabled = true;
+  try {
+    me = await api(`/api/${action}`, { method: "POST", body: { username: $("username").value, pin: $("pin").value } });
+    $("pin").value = "";
+    showApp();
+    await startConversation(false);
+  } catch (err) {
+    $("auth-error").textContent = err.message;
+  } finally {
+    for (const b of e.target.querySelectorAll("button")) b.disabled = false;
+  }
+});
+
+$("composer").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const text = $("message").value.trim();
+  if (!text || busy) return;
+  busy = true; $("send").disabled = true;
+  $("message").value = "";
+  add("user", `<p>${esc(text)}</p>`);
+  const typing = add("agent typing", "<p>Thinking…</p>");
+  try {
+    const r = await api("/api/chat", { method: "POST", body: { conversation_id: conversationId, message: text } });
+    typing.remove();
+    let html = format(r.reply);
+    const t = r.trace || {};
+    const lines = [];
+    if (r.changes.length) lines.push(`Updated: ${r.changes.join("; ")}`);
+    (t.claims || []).forEach((c) => lines.push(`Heard: ${c.polarity} ${c.attribute} ${c.subject || c.value} (${c.temporal}, ${c.modality})`));
+    (t.decisions || []).forEach((d) => lines.push(`Rule ${d.rule}: ${d.outcome}, ${d.reason}`));
+    if (t.confirmation) lines.push(`Read your answer as: ${t.confirmation}`);
+    if (t.fallback) lines.push("Reply built from menu data only (the model's reply failed checks)");
+    if (lines.length) html += `<details class="trace"><summary>How I read that</summary><ul>${lines.map((l) => `<li>${esc(l)}</li>`).join("")}</ul></details>`;
+    add("agent", html);
+    renderTicket(r.profile, r.question);
+  } catch (err) {
+    typing.remove();
+    if (err.status === 401) { showAuth(); return; }
+    add("problem", `<p>${esc(err.message)}</p>`);
+  } finally {
+    busy = false; $("send").disabled = false; $("message").focus();
+  }
+});
+
+$("message").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("composer").requestSubmit(); }
+});
+$("new-conv").addEventListener("click", () => startConversation(true));
+$("logout").addEventListener("click", async () => {
+  await api("/api/logout", { method: "POST" }).catch(() => {});
+  me = null; showAuth();
+});
+$("ticket-toggle").addEventListener("click", (e) => {
+  const wrap = $("ticket-wrap"), open = wrap.classList.toggle("collapsed") === false;
+  e.target.setAttribute("aria-expanded", String(open));
+  e.target.textContent = open ? "Hide what I remember" : "Show what I remember";
+});
+
+$("open-menu").addEventListener("click", async () => {
+  if (!$("menu-body").dataset.loaded) {
+    const m = await api("/api/menu");
+    $("menu-title").textContent = m.restaurant;
+    const groups = { starter: "Starters", main: "Mains", dessert: "Desserts" };
+    $("menu-body").innerHTML = Object.entries(groups).map(([cat, title]) =>
+      `<h3>${title}</h3>` + m.items.filter((i) => i.category === cat).map((i) => `
+        <div class="dish">
+          <div class="top"><strong>${esc(i.name)}</strong><span class="price">${money(i.price)}</span></div>
+          <div>${esc(i.description)}</div>
+          <div class="meta">${esc(i.diet)}, spice ${esc(i.spice)}${i.allergens.length ? `, contains ${esc(i.allergens.join(", ").replace(/_/g, " "))}` : ", no listed allergens"}</div>
+          <div class="ing">Ingredients: ${esc(i.ingredients.join(", ").replace(/_/g, " "))}</div>
+        </div>`).join("")).join("");
+    $("menu-body").dataset.loaded = "1";
+  }
+  $("menu").showModal();
+});
+$("close-menu").addEventListener("click", () => $("menu").close());
+
+(async () => {
+  if (window.matchMedia("(min-width: 861px)").matches) $("ticket-wrap").classList.remove("collapsed");
+  try {
+    me = await api("/api/me");
+    showApp();
+    await startConversation(false);
+  } catch {
+    showAuth();
+  }
+})();
+</script>
+</body>
+</html>

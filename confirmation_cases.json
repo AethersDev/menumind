@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "spec": "SPEC.md §7: replies to a pending confirmation are classified yes | no | unclear; unclear changes nothing",
+  "scoring": {
+    "accuracy": "predicted answer equals expected",
+    "false_yes": "predicted yes where expected is no or unclear; the headline metric, since yes is the only answer that changes state"
+  },
+  "questions": {
+    "remove_peanut": "Should I stop treating peanut as an allergy? I'll keep avoiding it until you confirm.",
+    "save_shellfish": "Should I save shellfish as an allergy for future visits?",
+    "save_vegetarian": "Should I save vegetarian as your diet going forward?"
+  },
+  "cases": [
+    {"id": "c01", "question": "remove_peanut", "reply": "Yes.", "expected": "yes"},
+    {"id": "c02", "question": "remove_peanut", "reply": "yep, I outgrew it", "expected": "yes"},
+    {"id": "c03", "question": "remove_peanut", "reply": "Remove it.", "expected": "yes"},
+    {"id": "c04", "question": "remove_peanut", "reply": "Sure, and nothing spicy tonight.", "expected": "yes"},
+    {"id": "c05", "question": "remove_peanut", "reply": "No.", "expected": "no"},
+    {"id": "c06", "question": "remove_peanut", "reply": "No, I'm still allergic.", "expected": "no"},
+    {"id": "c07", "question": "remove_peanut", "reply": "Keep it.", "expected": "no", "tests": "'it' is the allergy; keeping it means no"},
+    {"id": "c08", "question": "remove_peanut", "reply": "Nope, keep avoiding it.", "expected": "no"},
+    {"id": "c09", "question": "remove_peanut", "reply": "I guess?", "expected": "unclear", "tests": "hedged yes to a loosening is not a yes"},
+    {"id": "c10", "question": "remove_peanut", "reply": "Hmm, I'm not totally sure.", "expected": "unclear"},
+    {"id": "c11", "question": "remove_peanut", "reply": "What do you mean?", "expected": "unclear"},
+    {"id": "c12", "question": "remove_peanut", "reply": "Actually I meant sesame, not peanuts.", "expected": "unclear", "tests": "a different change; the extractor handles the correction"},
+    {"id": "c13", "question": "save_shellfish", "reply": "Yes, save it.", "expected": "yes"},
+    {"id": "c14", "question": "save_shellfish", "reply": "Just for tonight.", "expected": "no", "tests": "declines the durable save; the conversation overlay stays"},
+    {"id": "c15", "question": "save_shellfish", "reply": "Let me check with my doctor first.", "expected": "unclear"},
+    {"id": "c16", "question": "save_vegetarian", "reply": "Yeah, for good.", "expected": "yes"},
+    {"id": "c17", "question": "save_vegetarian", "reply": "Only today.", "expected": "no"},
+    {"id": "c18", "question": "save_vegetarian", "reply": "probably", "expected": "unclear"}
+  ]
+}

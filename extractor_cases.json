@@ -1,0 +1,331 @@
+{
+  "version": 1,
+  "spec": "SPEC.md §3 (Claim contract) and §5 (decision rules)",
+  "scoring": {
+    "claim_accuracy": "predicted claim set equals expected_claims on (attribute, polarity, subject, value, temporal, modality); order-insensitive; evidence ignored",
+    "outcome_accuracy": "decide(predicted) outcomes equal expected_outcomes",
+    "unsafe_errors": "(a) an expected hard tightening missing from the prediction, or (b) a predicted hard loosening absent from the expected labels; reported separately and treated as the headline metric"
+  },
+  "cases": [
+    {
+      "id": "veg-01-now",
+      "utterance": "I'm vegetarian now.",
+      "profile": {},
+      "expected_claims": [
+        {"attribute": "diet", "polarity": "assert", "value": "vegetarian", "temporal": "current", "modality": "asserted"}
+      ],
+      "expected_outcomes": ["apply"],
+      "tests": "Identity language plus 'now' gives a durable hard restriction."
+    },
+    {
+      "id": "veg-02-prefer-today",
+      "utterance": "I'd prefer something vegetarian today.",
+      "profile": {},
+      "expected_claims": [
+        {"attribute": "diet_lean", "polarity": "assert", "value": "vegetarian", "temporal": "conversation", "modality": "asserted"}
+      ],
+      "expected_outcomes": ["apply"],
+      "tests": "'Prefer' is a soft lean, not a restriction; 'today' is conversation scope."
+    },
+    {
+      "id": "veg-03-less-meat",
+      "utterance": "I'm trying to eat less meat.",
+      "profile": {},
+      "expected_claims": [
+        {"attribute": "diet", "polarity": "assert", "value": "vegetarian", "temporal": "aspirational", "modality": "asserted"}
+      ],
+      "expected_outcomes": ["apply"],
+      "tests": "Aspiration is converted by R3 to diet_lean; it must never become a hard diet."
+    },
+    {
+      "id": "veg-04-used-to-active",
+      "utterance": "I used to be vegetarian.",
+      "profile": {"diet": "vegetarian"},
+      "expected_claims": [
+        {"attribute": "diet", "polarity": "assert", "value": "vegetarian", "temporal": "past", "modality": "asserted"}
+      ],
+      "expected_outcomes": ["clarify"],
+      "tests": "Past statement about the stored diet: ask what replaces it; never assume omnivore (R1)."
+    },
+    {
+      "id": "veg-05-used-to-inactive",
+      "utterance": "I used to be vegetarian back in college.",
+      "profile": {},
+      "expected_claims": [
+        {"attribute": "diet", "polarity": "assert", "value": "vegetarian", "temporal": "past", "modality": "asserted"}
+      ],
+      "expected_outcomes": ["noop"],
+      "tests": "The same past statement is a no-op when nothing is stored: the outcome depends on the profile, not the sentence."
+    },
+    {
+      "id": "veg-06-not-anymore",
+      "utterance": "I'm not vegetarian anymore.",
+      "profile": {"diet": "vegetarian"},
+      "expected_claims": [
+        {"attribute": "diet", "polarity": "negate", "value": "vegetarian", "temporal": "current", "modality": "asserted"}
+      ],
+      "expected_outcomes": ["clarify"],
+      "tests": "Negation names no replacement diet, so the agent asks instead of resetting to omnivore (R5)."
+    },
+    {
+      "id": "veg-06b-not-anymore-with-replacement",
+      "utterance": "I'm not vegetarian anymore; I eat everything.",
+      "profile": {"diet": "vegetarian"},
+      "expected_claims": [
+        {"attribute": "diet", "polarity": "assert", "value": "omnivore", "temporal": "current", "modality": "asserted"}
+      ],
+      "expected_outcomes": ["apply"],
+      "tests": "When the replacement is stated, emit only the replacement assertion, not a separate negation (R11)."
+    },
+    {
+      "id": "veg-07-vegan-to-vegetarian",
+      "utterance": "I've switched from vegan to just vegetarian.",
+      "profile": {"diet": "vegan"},
+      "expected_claims": [
+        {"attribute": "diet", "polarity": "assert", "value": "vegetarian", "temporal": "current", "modality": "asserted"}
+      ],
+      "expected_outcomes": ["apply"],
+      "tests": "Asserting a less restrictive diet is a loosening; explicit, so it applies."
+    },
+    {
+      "id": "veg-08-might-go",
+      "utterance": "I think I might go vegetarian at some point.",
+      "profile": {},
+      "expected_claims": [
+        {"attribute": "diet", "polarity": "assert", "value": "vegetarian", "temporal": "hypothetical", "modality": "hedged"}
+      ],
+      "expected_outcomes": ["noop"],
+      "tests": "Hypothetical future change produces no state change."
+    },
+    {
+      "id": "diet-09-pescatarian",
+      "utterance": "I eat fish, but no other meat.",
+      "profile": {},
+      "expected_claims": [
+        {"attribute": "diet", "polarity": "assert", "value": "pescatarian", "temporal": "current", "modality": "asserted"}
+      ],
+      "expected_outcomes": ["apply"],
+      "tests": "Diet stated by description rather than by name."
+    },
+    {
+      "id": "diet-10-vegan-tighten",
+      "utterance": "I've gone fully vegan.",
+      "profile": {"diet": "vegetarian"},
+      "expected_claims": [
+        {"attribute": "diet", "polarity": "assert", "value": "vegan", "temporal": "current", "modality": "asserted"}
+      ],
+      "expected_outcomes": ["apply"],
+      "tests": "Tightening applies immediately."
+    },
+    {
+      "id": "alg-11-two-allergens",
+      "utterance": "I'm allergic to peanuts and sesame.",
+      "profile": {},
+      "expected_claims": [
+        {"attribute": "allergen", "polarity": "assert", "subject": "peanut", "temporal": "current", "modality": "asserted"},
+        {"attribute": "allergen", "polarity": "assert", "subject": "sesame", "temporal": "current", "modality": "asserted"}
+      ],
+      "expected_outcomes": ["apply", "apply"],
+      "tests": "One utterance, two set members, canonical singular subjects."
+    },
+    {
+      "id": "alg-12-no-longer-peanut",
+      "utterance": "I'm no longer allergic to peanuts.",
+      "profile": {"allergen": ["peanut", "sesame"]},
+      "expected_claims": [
+        {"attribute": "allergen", "polarity": "negate", "subject": "peanut", "temporal": "current", "modality": "asserted"}
+      ],
+      "expected_outcomes": ["confirm"],
+      "tests": "Explicit allergen removal still confirms (R10 always-confirm); targets peanut only."
+    },
+    {
+      "id": "alg-13-might-be-gone",
+      "utterance": "My peanut allergy might be gone.",
+      "profile": {"allergen": ["peanut"]},
+      "expected_claims": [
+        {"attribute": "allergen", "polarity": "negate", "subject": "peanut", "temporal": "current", "modality": "hedged"}
+      ],
+      "expected_outcomes": ["confirm"],
+      "tests": "Hedged removal of a hard restriction."
+    },
+    {
+      "id": "alg-14-outgrew",
+      "utterance": "I used to be allergic to shellfish but I outgrew it.",
+      "profile": {"allergen": ["shellfish"]},
+      "expected_claims": [
+        {"attribute": "allergen", "polarity": "negate", "subject": "shellfish", "temporal": "current", "modality": "asserted"}
+      ],
+      "expected_outcomes": ["confirm"],
+      "tests": "'Used to' paired with an explicit present statement is current negation, not past."
+    },
+    {
+      "id": "alg-15-might-be-allergic",
+      "utterance": "I think I might be allergic to shellfish.",
+      "profile": {},
+      "expected_claims": [
+        {"attribute": "allergen", "polarity": "assert", "subject": "shellfish", "temporal": "current", "modality": "hedged"}
+      ],
+      "expected_outcomes": ["apply+confirm"],
+      "tests": "Hedged tightening: enforced for this conversation now, durable after confirmation (R9)."
+    },
+    {
+      "id": "alg-16-companion",
+      "utterance": "My daughter's allergic to tree nuts and she's eating with me tonight.",
+      "profile": {},
+      "expected_claims": [
+        {"attribute": "allergen", "polarity": "assert", "subject": "tree_nut", "temporal": "conversation", "modality": "asserted"}
+      ],
+      "expected_outcomes": ["apply"],
+      "tests": "A companion's restriction for this meal is conversation-scoped, not the user's durable profile."
+    },
+    {
+      "id": "alg-17-ambiguous-nuts",
+      "utterance": "I'm allergic to nuts.",
+      "profile": {},
+      "expected_claims": [
+        {"attribute": "allergen", "polarity": "assert", "subject": "peanut", "temporal": "current", "modality": "asserted"},
+        {"attribute": "allergen", "polarity": "assert", "subject": "tree_nut", "temporal": "current", "modality": "asserted"}
+      ],
+      "expected_outcomes": ["apply", "apply"],
+      "tests": "An ambiguous subject expands to every plausible canonical member; tightening is cheap."
+    },
+    {
+      "id": "alg-18-correction",
+      "utterance": "Peanuts are fine actually, I was thinking of cashews.",
+      "profile": {"allergen": ["peanut"]},
+      "expected_claims": [
+        {"attribute": "allergen", "polarity": "negate", "subject": "peanut", "temporal": "current", "modality": "asserted"},
+        {"attribute": "allergen", "polarity": "assert", "subject": "tree_nut", "temporal": "current", "modality": "asserted"}
+      ],
+      "expected_outcomes": ["confirm", "apply"],
+      "tests": "A correction is both a removal (confirmed) and an addition (applied); cashew maps to tree_nut."
+    },
+    {
+      "id": "alg-19-still-allergic",
+      "utterance": "Still allergic to peanuts, by the way.",
+      "profile": {"allergen": ["peanut"]},
+      "expected_claims": [
+        {"attribute": "allergen", "polarity": "assert", "subject": "peanut", "temporal": "current", "modality": "asserted"}
+      ],
+      "expected_outcomes": ["noop"],
+      "tests": "Re-assertion is a no-op (R7). Misreading 'still' as a change would raise a removal question while leaving the profile identical."
+    },
+    {
+      "id": "spice-19-love-hate",
+      "utterance": "I love spicy food, but I hate mushrooms.",
+      "profile": {},
+      "expected_claims": [
+        {"attribute": "spice_tolerance", "polarity": "assert", "value": "hot", "temporal": "current", "modality": "asserted"},
+        {"attribute": "disliked_ingredient", "polarity": "assert", "subject": "mushroom", "temporal": "current", "modality": "asserted"}
+      ],
+      "expected_outcomes": ["apply", "apply"],
+      "tests": "The assignment's canonical example; dislike is soft, not an allergy."
+    },
+    {
+      "id": "spice-20-tonight",
+      "utterance": "Nothing spicy tonight.",
+      "profile": {"spice_tolerance": "hot"},
+      "expected_claims": [
+        {"attribute": "spice_tolerance", "polarity": "assert", "value": "none", "temporal": "conversation", "modality": "asserted"}
+      ],
+      "expected_outcomes": ["apply"],
+      "tests": "Conversation overlay; durable 'hot' must survive."
+    },
+    {
+      "id": "spice-21-anymore",
+      "utterance": "I don't like spicy food anymore.",
+      "profile": {"spice_tolerance": "hot"},
+      "expected_claims": [
+        {"attribute": "spice_tolerance", "polarity": "assert", "value": "none", "temporal": "current", "modality": "asserted"}
+      ],
+      "expected_outcomes": ["apply"],
+      "tests": "Ordinal scalar: a dislike is modeled as asserting 'none', not as negating 'hot'."
+    },
+    {
+      "id": "spice-22-medium-fine",
+      "utterance": "Actually, medium spice is fine.",
+      "profile": {"spice_tolerance": "none"},
+      "expected_claims": [
+        {"attribute": "spice_tolerance", "polarity": "assert", "value": "medium", "temporal": "current", "modality": "asserted"}
+      ],
+      "expected_outcomes": ["apply"],
+      "tests": "Scope is ambiguous, but the attribute is soft, so it is applied durably without asking."
+    },
+    {
+      "id": "spice-23-used-to-love",
+      "utterance": "I used to love spicy food.",
+      "profile": {"spice_tolerance": "hot"},
+      "expected_claims": [
+        {"attribute": "spice_tolerance", "polarity": "assert", "value": "hot", "temporal": "past", "modality": "asserted"}
+      ],
+      "expected_outcomes": ["noop"],
+      "tests": "Soft past statement is a no-op by R2 (SPEC §12.4); the agent may ask conversationally."
+    },
+    {
+      "id": "ing-24-dont-mind",
+      "utterance": "I don't mind mushrooms actually.",
+      "profile": {"disliked_ingredient": ["mushroom"]},
+      "expected_claims": [
+        {"attribute": "disliked_ingredient", "polarity": "negate", "subject": "mushroom", "temporal": "current", "modality": "asserted"}
+      ],
+      "expected_outcomes": ["apply"],
+      "tests": "Negation removes a soft set member without asking."
+    },
+    {
+      "id": "ing-25-not-today",
+      "utterance": "It's not that I don't like mushrooms, I just don't want them today.",
+      "profile": {},
+      "expected_claims": [
+        {"attribute": "disliked_ingredient", "polarity": "assert", "subject": "mushroom", "temporal": "conversation", "modality": "asserted"}
+      ],
+      "expected_outcomes": ["apply"],
+      "tests": "Double negation trap: the durable dislike is denied, the conversation exclusion is asserted."
+    },
+    {
+      "id": "bud-26-this-order",
+      "utterance": "Keep it under $15.",
+      "profile": {},
+      "expected_claims": [
+        {"attribute": "budget_max", "polarity": "assert", "value": 15, "temporal": "conversation", "modality": "asserted"}
+      ],
+      "expected_outcomes": ["apply"],
+      "tests": "Request-shaped budget is conversation-scoped."
+    },
+    {
+      "id": "bud-27-standing",
+      "utterance": "I never spend more than $20 on lunch.",
+      "profile": {},
+      "expected_claims": [
+        {"attribute": "budget_max", "polarity": "assert", "value": 20, "temporal": "current", "modality": "asserted"}
+      ],
+      "expected_outcomes": ["apply"],
+      "tests": "Habitual budget is durable."
+    },
+    {
+      "id": "noop-28-counterfactual",
+      "utterance": "If I weren't vegetarian I'd get the lamb.",
+      "profile": {"diet": "vegetarian"},
+      "expected_claims": [
+        {"attribute": "diet", "polarity": "negate", "value": "vegetarian", "temporal": "hypothetical", "modality": "asserted"}
+      ],
+      "expected_outcomes": ["noop"],
+      "tests": "Counterfactual mentions a loosening but must not perform one."
+    },
+    {
+      "id": "noop-29-third-party",
+      "utterance": "My friend is vegan, but I'm not.",
+      "profile": {},
+      "expected_claims": [],
+      "expected_outcomes": [],
+      "tests": "Absent third party: no claims. 'I'm not [vegan]' is already the default."
+    },
+    {
+      "id": "noop-30-question",
+      "utterance": "Is the pad thai made with peanuts?",
+      "profile": {},
+      "expected_claims": [],
+      "expected_outcomes": [],
+      "tests": "A question is not a restriction; the extractor must not infer an allergy."
+    }
+  ]
+}
