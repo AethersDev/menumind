@@ -11,12 +11,13 @@ os.environ["MENUMIND_NO_APP"] = "1"  # don't build the module-level app on impor
 
 import anthropic
 import httpx2
+import openai
 import pytest
 from fastapi.testclient import TestClient
 
 import accounts as accounts_module
 import agent as agent_module
-import server as server_module
+import llm
 from accounts import LOGIN_FAILURES_ALLOWED, LOGIN_WINDOW_SECONDS, SESSION_SECONDS, Accounts
 from agent import (CONVERSATION_IDLE_SECONDS, MAX_CONVERSATIONS_PER_USER, Agent,
                    UnknownConversation)
@@ -523,11 +524,20 @@ def test_oversized_credentials_are_rejected_before_hashing(app):
     assert r.status_code == 422
 
 
-def test_model_client_has_bounded_timeout_and_retries(monkeypatch):
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
-    client = server_module._anthropic_client()
-    assert (client.timeout, client.max_retries) == (server_module.MODEL_TIMEOUT_S,
-                                                    server_module.MODEL_RETRIES)
+@pytest.mark.parametrize("provider", sorted(llm.KEY_ENV))
+def test_model_clients_have_bounded_timeout_and_retries(provider, monkeypatch):
+    monkeypatch.setenv(llm.KEY_ENV[provider], "test-key")
+    client = llm.make_client(provider)
+    sdk = getattr(client, "sdk", client)  # the OpenAI adapter wraps its SDK client
+    assert (sdk.timeout, sdk.max_retries) == (llm.MODEL_TIMEOUT_S, llm.MODEL_RETRIES)
+
+
+def test_openai_errors_also_fall_back(tmp_path):
+    def openai_down(*_, **__):
+        raise openai.APIConnectionError(request=httpx2.Request("POST", "https://api.openai.com"))
+    agent, _ = make_agent(tmp_path, responder=openai_down)
+    r = agent.turn("alice", agent.start_conversation("alice"), "I'm allergic to soy.")
+    assert r.trace["fallback"] and "Noted: avoiding soy (allergy)." in r.reply
 
 
 def test_returning_user_sees_saved_preferences(app):
@@ -541,11 +551,12 @@ def test_returning_user_sees_saved_preferences(app):
 
 
 def test_chat_without_api_key_is_503(tmp_path, monkeypatch):
-    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    for key in llm.KEY_ENV.values():
+        monkeypatch.delenv(key, raising=False)
     app = create_app(db_path=str(tmp_path / "nokey.sqlite"))
     c, cid = signup(app, "alice")
     r = c.post("/api/chat", json={"conversation_id": cid, "message": "hi"})
-    assert r.status_code == 503 and "ANTHROPIC_API_KEY" in r.json()["detail"]
+    assert r.status_code == 503 and llm.KEY_ENV[llm.PROVIDER] in r.json()["detail"]
     assert c.get("/api/me").status_code == 200  # memory still readable
 
 

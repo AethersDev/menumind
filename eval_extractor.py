@@ -288,7 +288,8 @@ def render(report: dict) -> str:
 
 
 def main() -> None:
-    from extractor import DEFAULT_MODEL, classify_reply_with_stats, extract
+    from extractor import classify_reply_with_stats, extract
+    from llm import DEFAULT_MODEL, PROVIDER, make_client
 
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", default=DEFAULT_MODEL)
@@ -298,8 +299,7 @@ def main() -> None:
     ap.add_argument("--out", default=None, help="report path (default eval_report_<model>.json)")
     args = ap.parse_args()
 
-    import anthropic
-    client = anthropic.Anthropic()
+    client = make_client(PROVIDER)
 
     def predict(utterance: str):
         x = extract(utterance, client=client, model=args.model)

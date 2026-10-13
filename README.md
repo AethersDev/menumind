@@ -41,8 +41,8 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-cp .env.example .env            # then put your key in ANTHROPIC_API_KEY
-set -a; source .env; set +a
+# the OpenAI key, read from the macOS Keychain (service "openai-api-key")
+export OPENAI_API_KEY="$(security find-generic-password -s openai-api-key -w)"
 
 uvicorn server:app --reload
 open http://127.0.0.1:8000
@@ -53,6 +53,12 @@ the right shows what MenuMind remembers, split into "every visit" and "just this
 conversation"; a temporary change is listed with the saved value it overrides. Each reply has
 a "How I read that" section showing the preferences it heard and the rule that decided what
 to do with them.
+
+The model provider is OpenAI by default (`gpt-6-luna` for every model call). To use
+Anthropic instead, set `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY`; its default model is
+`claude-haiku-5-5`. `EXTRACT_MODEL` and `REPLY_MODEL` override the model per step, and
+`.env.example` lists the settings. Requests to OpenAI are sent with `store=false`, so OpenAI
+doesn't keep the conversation for later retrieval.
 
 **Without an API key**, `python preview.py` runs the same app with a scripted model that
 understands a handful of phrases (they print at startup). Use it for UI work.
@@ -99,6 +105,7 @@ built from verified data: the changes it saved and the top eligible dishes.
 |---|---|
 | `memory.py` | Preference model, decision rules, event log, profile fold, confirmation lifecycle |
 | `extractor.py` | Model calls: reading preferences from a message, classifying yes/no answers |
+| `llm.py` | Model provider: OpenAI (default) or Anthropic behind one call shape, timeouts, retries |
 | `menu.json`, `menu.py` | The menu (19 dishes). Every ingredient is classified (compound ones through declared house recipes), and each dish's allergens and diet must match its ingredients |
 | `recommend.py` | Hard filtering, soft ranking, grounded rendering and reply checks |
 | `agent.py` | One chat turn end to end |
@@ -112,9 +119,9 @@ built from verified data: the changes it saved and the top eligible dishes.
 ## Tests and evaluation
 
 ```bash
-pytest                                        # 178 tests, no API calls
+pytest                                        # 186 tests, no API calls
 python eval_extractor.py                      # extractor + reply classifier, default model
-python eval_extractor.py --model claude-sonnet-5-5 --price-in <USD/Mtok> --price-out <USD/Mtok>
+python eval_extractor.py --model gpt-6.1-sol --price-in <USD/Mtok> --price-out <USD/Mtok>
 ```
 
 The evaluation reports safety first, as counts: restrictions enforced and remembered, unsafe
@@ -130,14 +137,15 @@ builds from a Dockerfile and offers a persistent disk, for example Render, Fly.i
 
 1. Create a service from the GitHub repository, using the included `Dockerfile`.
 2. Attach a persistent volume mounted at `/data` (the database lives at `/data/menumind.db`).
-3. Set `ANTHROPIC_API_KEY` as a secret. `COOKIE_SECURE=1` is already set for HTTPS.
+3. Set `OPENAI_API_KEY` as a secret (or `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY`).
+   `COOKIE_SECURE=1` is already set for HTTPS.
 4. Run a single instance (see limitations).
 5. Cap request bodies at the proxy if your host allows it; the app caps fields, not bodies.
 
 Logs go to stderr. Model failures and rejected model replies are warnings, logged with user
 ids but not message text (an extraction error may quote the value it rejected). Unexpected
 errors are logged with a traceback and answered with a generic 500. Each model call times out
-after 30 seconds and is retried once (`MODEL_TIMEOUT_S`, `MODEL_RETRIES` in `server.py`);
+after 30 seconds and is retried once (`MODEL_TIMEOUT_S`, `MODEL_RETRIES` in `llm.py`);
 tune them from the latency the evaluation reports.
 
 ## Limitations, stated plainly

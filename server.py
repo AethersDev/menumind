@@ -1,8 +1,9 @@
 """HTTP API and chat page.
 
 Run locally:  uvicorn server:app --reload
-Environment:  ANTHROPIC_API_KEY (required for chat), DB_PATH (default data/menumind.db),
-              EXTRACT_MODEL, REPLY_MODEL (default claude-haiku-5-5), COOKIE_SECURE=1 behind HTTPS
+Environment:  LLM_PROVIDER (openai, the default, or anthropic) and its OPENAI_API_KEY or
+              ANTHROPIC_API_KEY (required for chat), EXTRACT_MODEL, REPLY_MODEL (default per
+              provider, see llm.py), DB_PATH (default data/menumind.db), COOKIE_SECURE=1 behind HTTPS
 """
 from __future__ import annotations
 
@@ -18,7 +19,7 @@ from pydantic import BaseModel, Field
 
 from accounts import SESSION_SECONDS, AccountError, Accounts, TooManyAttempts
 from agent import Agent, ModelUnavailable, UnknownConversation, profile_view
-from extractor import DEFAULT_MODEL
+from llm import DEFAULT_MODEL, KEY_ENV, PROVIDER, make_client
 from memory import EventStore
 from menu import DEFAULT_PATH, load_menu
 
@@ -26,8 +27,6 @@ HERE = Path(__file__).parent
 COOKIE = "menumind_session"
 CONVERSATION_ID = re.compile(r"^[A-Za-z0-9-]{8,64}$")
 MAX_MESSAGE = 2000
-MODEL_TIMEOUT_S = 30.0  # per model call; tune from the eval's measured p95 latency
-MODEL_RETRIES = 1       # SDK retries of connection errors, 408/409/429 and 5xx
 PUBLIC_TRACE = ("claims", "decisions", "confirmation", "fallback")  # no error text
 ENDED = "This conversation has ended. Start a new one."
 
@@ -42,11 +41,10 @@ class ChatIn(BaseModel):
     message: str
 
 
-def _anthropic_client():
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        raise ModelUnavailable("ANTHROPIC_API_KEY is not set")
-    import anthropic
-    return anthropic.Anthropic(timeout=MODEL_TIMEOUT_S, max_retries=MODEL_RETRIES)
+def _model_client():
+    if not os.environ.get(KEY_ENV[PROVIDER]):
+        raise ModelUnavailable(f"{KEY_ENV[PROVIDER]} is not set")
+    return make_client(PROVIDER)
 
 
 def create_app(db_path: Optional[str] = None, client=None, menu_path=None) -> FastAPI:
@@ -56,9 +54,9 @@ def create_app(db_path: Optional[str] = None, client=None, menu_path=None) -> Fa
         Path(db_path).parent.mkdir(parents=True, exist_ok=True)
     store, accounts = EventStore(db_path), Accounts(db_path)
     menu = load_menu(menu_path or DEFAULT_PATH)
-    agent = Agent(store, menu, client, client_factory=_anthropic_client,
-                  extract_model=os.environ.get("EXTRACT_MODEL", DEFAULT_MODEL),
-                  reply_model=os.environ.get("REPLY_MODEL", DEFAULT_MODEL))
+    agent = Agent(store, menu, client, client_factory=_model_client,
+                  extract_model=os.environ.get("EXTRACT_MODEL") or DEFAULT_MODEL,  # "" is unset
+                  reply_model=os.environ.get("REPLY_MODEL") or DEFAULT_MODEL)
     secure = os.environ.get("COOKIE_SECURE") == "1"
 
     app = FastAPI(title="MenuMind")
@@ -93,7 +91,7 @@ def create_app(db_path: Optional[str] = None, client=None, menu_path=None) -> Fa
 
     @app.get("/api/health")
     def health():
-        return {"ok": True, "chat_enabled": bool(os.environ.get("ANTHROPIC_API_KEY")) or client is not None}
+        return {"ok": True, "chat_enabled": bool(os.environ.get(KEY_ENV[PROVIDER])) or client is not None}
 
     @app.get("/api/menu")
     def get_menu():
@@ -150,7 +148,7 @@ def create_app(db_path: Optional[str] = None, client=None, menu_path=None) -> Fa
         try:
             result = agent.turn(user_id, cid, text)
         except ModelUnavailable:
-            raise HTTPException(503, "Chat is off: the server has no ANTHROPIC_API_KEY. "
+            raise HTTPException(503, f"Chat is off: the server has no {KEY_ENV[PROVIDER]}. "
                                      "Set it and restart the server.") from None
         except UnknownConversation:
             raise HTTPException(404, ENDED) from None

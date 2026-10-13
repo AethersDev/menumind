@@ -1,7 +1,7 @@
 """LLM steps: utterance -> Claim[] (SPEC §3) and confirmation reply -> yes/no/unclear (§7).
 
-Both use Claude structured outputs (`output_config` with a JSON schema), which works on every
-current model, unlike forced tool choice. Whatever the model returns is then validated against
+Both use structured outputs: the model's reply must follow a JSON schema (llm.py sends it to
+whichever provider is configured). Whatever the model returns is then validated against
 memory.py's vocabulary. Invalid output is reported, never repaired by guessing: the runtime
 policy is no state change and a request to rephrase.
 """
@@ -14,11 +14,9 @@ import time
 from dataclasses import dataclass, field, replace
 from typing import Any, Optional
 
-import anthropic
-
+from llm import DEFAULT_MODEL, MODEL_ERRORS
 from memory import ATTRIBUTES, Claim, Modality, Temporal, _check_value, canonical_subject
 
-DEFAULT_MODEL = "claude-haiku-5-5"
 MAX_TOKENS = 4096  # headroom for models that think by default
 
 log = logging.getLogger(__name__)
@@ -36,7 +34,8 @@ CLAIM_SCHEMA = {
                     "attribute": {"type": "string", "enum": list(ATTRIBUTES)},
                     "polarity": {"type": "string", "enum": ["assert", "negate"]},
                     "subject": {"type": ["string", "null"]},
-                    "value": {"type": ["string", "number", "null"]},
+                    "value": {"anyOf": [{"type": "string"}, {"type": "number"},
+                                        {"type": "null"}]},
                     "temporal": {"type": "string", "enum": [t.value for t in Temporal]},
                     "modality": {"type": "string", "enum": [m.value for m in Modality]},
                     "evidence": {"type": "string"},
@@ -157,7 +156,7 @@ class _Stats:
         self.d = {"latency_s": 0.0, "input_tokens": 0, "output_tokens": 0, "calls": 0}
 
     def call(self, client, model: str, system: str, user: str, schema: dict) -> Any:
-        """The parsed JSON reply. Raises anthropic.APIError when the call fails and
+        """The parsed JSON reply. Raises one of MODEL_ERRORS when the call fails and
         ValueError when the reply is not JSON."""
         t0 = time.perf_counter()
         try:
@@ -178,20 +177,15 @@ class _Stats:
         return json.loads(text)
 
 
-def _client(client):
-    return client if client is not None else anthropic.Anthropic()
-
-
-def extract(utterance: str, *, client=None, model: str = DEFAULT_MODEL, retries: int = 1) -> Extraction:
+def extract(utterance: str, *, client, model: str = DEFAULT_MODEL, retries: int = 1) -> Extraction:
     """Utterance -> validated claims. Retries once when the output is invalid. API errors
     are not retried here: the client's own retries already covered the transient ones."""
-    client = _client(client)
     stats = _Stats()
     last = Extraction([], error="not attempted")
     for _ in range(retries + 1):
         try:
             payload = stats.call(client, model, EXTRACT_SYSTEM, utterance, CLAIM_SCHEMA)
-        except anthropic.APIError as e:
+        except MODEL_ERRORS as e:
             last = Extraction([], error=f"{type(e).__name__}: {e}")
             break
         except ValueError as e:  # not JSON: ask again
@@ -228,20 +222,20 @@ to the question.
 REPLY_ANSWERS = ("yes", "no", "unclear")
 
 
-def classify_reply_with_stats(question: str, reply: str, *, client=None,
+def classify_reply_with_stats(question: str, reply: str, *, client,
                               model: str = DEFAULT_MODEL) -> tuple[str, dict]:
     """Return (yes | no | unclear, stats). A failed call or unusable output is 'unclear',
     which changes nothing (SPEC §7). Errors in our own code still raise."""
     stats = _Stats()
     try:
-        payload = stats.call(_client(client), model, REPLY_SYSTEM,
+        payload = stats.call(client, model, REPLY_SYSTEM,
                              f"Question: {question}\nReply: {reply}", REPLY_SCHEMA)
         answer = str(payload["answer"]).strip().lower()
-    except (anthropic.APIError, ValueError, KeyError, TypeError) as e:
+    except (*MODEL_ERRORS, ValueError, KeyError, TypeError) as e:
         log.warning("reply classification failed, treated as unclear: %s", type(e).__name__)
         return "unclear", stats.d
     return (answer if answer in REPLY_ANSWERS else "unclear"), stats.d
 
 
-def classify_reply(question: str, reply: str, *, client=None, model: str = DEFAULT_MODEL) -> str:
+def classify_reply(question: str, reply: str, *, client, model: str = DEFAULT_MODEL) -> str:
     return classify_reply_with_stats(question, reply, client=client, model=model)[0]

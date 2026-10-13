@@ -25,9 +25,8 @@ from dataclasses import dataclass, field
 from time import monotonic
 from typing import Optional
 
-import anthropic
-
-from extractor import DEFAULT_MODEL, MAX_TOKENS, classify_reply, extract
+from extractor import MAX_TOKENS, classify_reply, extract
+from llm import DEFAULT_MODEL, MODEL_ERRORS
 from memory import (ATTRIBUTES, Conversation, Decision, Draft, EventStore, Kind, Op, Profile,
                     Scope, StaleConfirmation)
 from menu import Menu
@@ -320,7 +319,7 @@ class Agent:
         for _ in range(2):
             try:
                 raw = self._call(messages)
-            except anthropic.APIError as e:
+            except MODEL_ERRORS as e:
                 log.warning("reply model failed, using the fallback: %s", type(e).__name__)
                 errors.append(f"{type(e).__name__}: {e}")
                 break

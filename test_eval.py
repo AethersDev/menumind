@@ -3,16 +3,20 @@
 The scorer reports the numbers the extractor will be judged by, so it is tested against
 predictors whose errors are known exactly: an oracle, and single targeted mistakes.
 """
+import inspect
 import json
 from types import SimpleNamespace
 
 import anthropic
 import httpx2
 import pytest
+from openai.resources.responses import Responses
 
 from eval_extractor import cost_usd, evaluate_confirmations, evaluate_extractor, load, render
-from extractor import (CLAIM_SCHEMA, EXTRACT_SYSTEM, classify_reply, classify_reply_with_stats,
-                       extract, parse_claims)
+from agent import TURN_SCHEMA
+from extractor import (CLAIM_SCHEMA, EXTRACT_SYSTEM, MAX_TOKENS, REPLY_SCHEMA, classify_reply,
+                       classify_reply_with_stats, extract, parse_claims)
+from llm import OpenAIClient
 from memory import ATTRIBUTES, Claim, Temporal
 
 CASES = load("extractor_cases.json")["cases"]
@@ -255,6 +259,67 @@ def test_classify_reply_defaults_to_unclear(output, expected):
 def test_a_bug_is_not_hidden_as_unclear():
     with pytest.raises(RuntimeError):
         classify_reply("q?", "r", client=FakeClient(RuntimeError("bug in our code")))
+
+
+# ------------------------------------------------------------------ OpenAI adapter
+
+class FakeOpenAI:
+    """Records Responses API calls and answers each with the next scripted output text."""
+
+    def __init__(self, *texts, status="completed", reason=None):
+        self.texts, self.calls = list(texts), []
+        self.status, self.reason = status, reason
+        self.responses = SimpleNamespace(create=self._create)
+
+    def _create(self, **kw):
+        self.calls.append(kw)
+        return SimpleNamespace(
+            output_text=self.texts.pop(0), status=self.status,
+            incomplete_details=SimpleNamespace(reason=self.reason) if self.reason else None,
+            usage=SimpleNamespace(input_tokens=7, output_tokens=3))
+
+
+def test_openai_adapter_sends_a_strict_schema_and_stores_nothing():
+    sdk = FakeOpenAI(json.dumps({"claims": [_item(subject="sesame")]}))
+    x = extract("I'm allergic to sesame", client=OpenAIClient(sdk), model="m")
+    assert x.error is None and x.claims[0].subject == "sesame" and x.stats["input_tokens"] == 7
+    call = sdk.calls[0]
+    assert call["instructions"] == EXTRACT_SYSTEM and call["model"] == "m"
+    assert call["input"] == [{"role": "user", "content": "I'm allergic to sesame"}]
+    assert call["text"] == {"format": {"type": "json_schema", "name": "reply",
+                                       "schema": CLAIM_SCHEMA, "strict": True}}
+    assert call["store"] is False and call["max_output_tokens"] == MAX_TOKENS
+
+
+def test_truncated_openai_output_counts_as_invalid():
+    sdk = FakeOpenAI("", "", status="incomplete", reason="max_output_tokens")
+    x = extract("...", client=OpenAIClient(sdk), model="m")
+    assert "max_output_tokens" in x.error and len(sdk.calls) == 2
+
+
+def test_openai_adapter_matches_the_installed_sdk():
+    params = inspect.signature(Responses.create).parameters
+    assert {"model", "instructions", "input", "max_output_tokens", "text", "store"} <= set(params)
+
+
+def _strict(schema: dict) -> bool:
+    """OpenAI strict mode: objects list every property as required and forbid extras; a
+    type array is at most [T, "null"] (wider unions use anyOf)."""
+    t = schema.get("type")
+    if isinstance(t, list) and (len(t) > 2 or (len(t) == 2 and "null" not in t)):
+        return False
+    if t == "object" and (schema.get("additionalProperties") is not False
+                          or set(schema.get("required", [])) != set(schema["properties"])):
+        return False
+    children = list(schema.get("properties", {}).values()) + schema.get("anyOf", [])
+    children += [schema["items"]] if "items" in schema else []
+    return all(_strict(c) for c in children)
+
+
+@pytest.mark.parametrize("schema", [CLAIM_SCHEMA, REPLY_SCHEMA, TURN_SCHEMA],
+                         ids=["claims", "yes-no", "reply"])
+def test_schemas_fit_openai_strict_mode(schema):
+    assert _strict(schema)
 
 
 # ------------------------------------------------------------------ prompt hygiene

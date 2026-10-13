@@ -1,5 +1,7 @@
-# Tested with: anthropic 1.13.0, fastapi 0.143.0, uvicorn 0.53.0, httpx 0.28.1, Python 3.13
-anthropic>=1.13
+# Tested with: openai 3.29.0, anthropic 1.13.0, fastapi 0.143.0, uvicorn 0.54.0, httpx 0.28.1,
+# Python 3.13
+openai>=3.29
+anthropic>=1.13     # the alternative provider (LLM_PROVIDER=anthropic)
 fastapi>=0.115
 uvicorn[standard]>=0.30
 httpx>=0.27
