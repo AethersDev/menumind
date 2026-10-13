@@ -261,7 +261,7 @@ def test_recommended_dishes_are_rendered_by_code(tmp_path):
     agent, _ = make_agent(tmp_path, responder=lambda b, m: says("Two good fits.", "M2", "D3"))
     c1 = agent.start_conversation("alice")
     r = agent.turn("alice", c1, SPICY)
-    assert r.reply == ("Two good fits.\n\n"
+    assert r.reply == ("Every visit: spice: hot; dislikes mushroom.\n\nTwo good fits.\n\n"
                        "- **Green Curry with Tofu** ($14.00): matches your spice level (hot)\n"
                        "- **Coconut Lime Sorbet** ($6.00)")
     assert [(m["id"], m["kind"]) for m in r.mentioned] == [("M2", "rec"), ("D3", "rec")]
@@ -283,12 +283,14 @@ def test_unsafe_recommendation_is_rejected_then_rewritten(tmp_path):
 
 
 def test_rule_breaking_model_falls_back_to_menu_data(tmp_path):
-    agent, fake = make_agent(tmp_path, responder=lambda b, m: says("The Lobster Roll is $30."))
+    """Only the wording broke the rules, so the fallback keeps the model's own dishes
+    (seen live: a request for a main fell back to starters)."""
+    agent, fake = make_agent(tmp_path, responder=lambda b, m: says("The Lobster Roll is $30.", "M9"))
     c1 = agent.start_conversation("alice")
     r = agent.turn("alice", c1, "I'm vegetarian.")
     assert r.trace["fallback"] and fake.calls["respond"] == 2
-    assert "$30" not in r.reply and r.mentioned
-    assert all(MENU.get(m["id"]).diet in ("vegetarian", "vegan") for m in r.mentioned)
+    assert "$30" not in r.reply and [m["id"] for m in r.mentioned] == ["M9"]
+    assert r.trace["rejected"] == [says("The Lobster Roll is $30.", "M9")] * 2
 
 
 def test_unreadable_preference_fails_closed(tmp_path):
@@ -326,7 +328,7 @@ def test_narration_outage_falls_back_to_grounded_dishes(tmp_path):
     agent, _ = make_agent(tmp_path, responder=api_down)
     c1 = agent.start_conversation("alice")
     r = agent.turn("alice", c1, "I'm allergic to soy.")
-    assert r.trace["fallback"] and "Noted: avoiding soy (allergy)." in r.reply
+    assert r.trace["fallback"] and "Every visit: avoiding soy (allergy)." in r.reply
     assert r.mentioned and all("soy" not in MENU.get(m["id"]).allergens for m in r.mentioned)
 
 
@@ -379,7 +381,8 @@ def test_plural_ingredients_map_to_the_menu_word(tmp_path):
 
 
 @pytest.mark.parametrize("output", ["{not json", '{"message": "hi"}', '["a list"]',
-                                    '{"message": 5, "recommend": []}', ""])
+                                    '{"message": 5, "recommend": []}', "",
+                                    says("Try this.", "S4")])  # the dish itself is unsafe
 def test_malformed_model_output_falls_back(tmp_path, output):
     """A successful API call with unusable output gets the grounded fallback, not a 500."""
     agent, fake = make_agent(tmp_path, responder=lambda b, m: output)
@@ -562,7 +565,7 @@ def test_openai_errors_also_fall_back(tmp_path):
         raise openai.APIConnectionError(request=httpx2.Request("POST", "https://api.openai.com"))
     agent, _ = make_agent(tmp_path, responder=openai_down)
     r = agent.turn("alice", agent.start_conversation("alice"), "I'm allergic to soy.")
-    assert r.trace["fallback"] and "Noted: avoiding soy (allergy)." in r.reply
+    assert r.trace["fallback"] and "Every visit: avoiding soy (allergy)." in r.reply
 
 
 def test_returning_user_sees_saved_preferences(app):

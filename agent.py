@@ -67,9 +67,8 @@ with [[item:ID]]; the app adds the warning.
 5. "profile" has what is enforced now ("enforced_now") and what is saved for future visits \
 ("saved"). Where they differ, the difference holds only for this conversation.
 6. If "questions_to_ask" is not empty, ask those questions, keeping their meaning.
-7. If "changes" is not empty, acknowledge them briefly in plain words, without saying how \
-long they last: the app shows the customer what is saved and what holds only for this \
-conversation.
+7. "changes" are shown to the customer by the app, above your message, with how long each \
+lasts. Don't repeat them or say how long anything lasts.
 8. If "notice" is present, pass it on to the customer.
 9. Be brief: at most five sentences, plain text, no headings.
 """
@@ -110,8 +109,20 @@ class _ConvState:
 
 # ------------------------------------------------------------------------ descriptions
 
+_THIS_CONVERSATION = " (this conversation)"
+
+
 def _scope_note(d: Draft) -> str:
-    return " (this conversation)" if d.scope is Scope.CONVERSATION else ""
+    return _THIS_CONVERSATION if d.scope is Scope.CONVERSATION else ""
+
+
+def _changes_line(changes: list) -> str:
+    """The turn's changes in the app's words, split like the ticket. The model is not trusted
+    with this: in live runs it called saved changes temporary."""
+    every = [c for c in changes if not c.endswith(_THIS_CONVERSATION)]
+    now = [c.removesuffix(_THIS_CONVERSATION) for c in changes if c.endswith(_THIS_CONVERSATION)]
+    return " ".join(([f"Every visit: {'; '.join(every)}."] if every else [])
+                    + ([f"Just this conversation: {'; '.join(now)}."] if now else []))
 
 
 def describe(d: Draft) -> str:
@@ -260,7 +271,7 @@ class Agent:
                         events = conv.answer(still_pending.proposal_id, verdict == "yes")
                         changes += [describe(e) for e in _drafts(events)]
                         if verdict == "no":
-                            changes.append("kept as it was")
+                            notice = "Nothing was changed."
                     except StaleConfirmation:
                         log.info("stale confirmation user=%s", user_id)
                         notice = "The earlier question no longer applies; nothing was changed."
@@ -272,10 +283,9 @@ class Agent:
         recs = recommend(self.menu, profile.active)
         question = pending.question if pending else None  # the one awaiting yes or no
 
-        message, picks, errors, fallback = self._reply(state, text, profile, recs, changes,
-                                                       questions, notice)
+        message, picks = self._reply(state, text, profile, recs, changes, questions, notice, trace)
         reply, mentioned = render(message, picks, self.menu, recs, profile.active["budget_max"])
-        trace.update(reply_errors=errors, fallback=fallback)
+        reply = "\n\n".join(part for part in (_changes_line(changes), reply) if part)
         with self._lock:
             state.history += [{"role": "user", "content": text},
                               {"role": "assistant",
@@ -313,12 +323,17 @@ class Agent:
                                                          "schema": TURN_SCHEMA}})
         return "".join(b.text for b in resp.content if getattr(b, "type", None) == "text").strip()
 
-    def _reply(self, state: _ConvState, text, profile, recs, changes, questions, notice):
-        """(message, picks, errors, fallback): two attempts by the model, then a reply built
-        from verified data. Memory is already settled, so a failure here only costs prose."""
+    def _reply(self, state: _ConvState, text, profile, recs, changes, questions, notice,
+               trace: dict) -> tuple[str, list]:
+        """(message, picks): two attempts by the model, then a reply built from verified data.
+        Memory is already settled, so a failure here only costs prose. Records the rejected
+        outputs, their problems and whether the fallback was used in `trace`."""
         messages = state.history + [{"role": "user", "content": self._briefing(
             text, profile, recs, changes, questions, notice)}]
         errors: list = []
+        rejected: list = []
+        usable = None  # the model's dishes, when they passed and only its wording failed
+        trace.update(reply_errors=errors, rejected=rejected, fallback=False)
         for _ in range(2):
             try:
                 raw = self._call(messages)
@@ -332,17 +347,21 @@ class Agent:
                 problems = [f"unreadable reply ({type(e).__name__}: {e})"]
             else:
                 problems = check_reply(message, picks, self.menu, recs)
+                if not check_reply("", picks, self.menu, recs):  # the dishes alone pass
+                    usable = picks
                 if not message.strip():
                     problems.append("empty message")
             if not problems:
-                return message, picks, errors, False
+                return message, picks
             log.warning("reply model output rejected: %s", "; ".join(problems))
             errors.append(problems)
+            rejected.append(raw)
             messages = messages + [
                 {"role": "assistant", "content": raw or "(empty)"},
                 {"role": "user", "content": "That reply broke these rules: " + "; ".join(problems)
                  + ". Rewrite it following the rules."}]
-        return (*fallback_reply(recs, changes, questions, notice), errors, True)
+        trace["fallback"] = True
+        return fallback_reply(recs, questions, notice, usable)
 
 
 def _parse(raw: str) -> tuple[str, list]:
@@ -354,17 +373,19 @@ def _parse(raw: str) -> tuple[str, list]:
     return message, picks
 
 
-def fallback_reply(recs: Recommendations, changes: list, questions: list,
-                   notice: Optional[str]) -> tuple[str, list]:
+def fallback_reply(recs: Recommendations, questions: list, notice: Optional[str],
+                   picks: Optional[list] = None) -> tuple[str, list]:
     """(message, picks) built only from verified data, for when the model can't produce a
-    valid reply."""
-    parts = [notice] if notice else []
-    if changes:
-        parts.append("Noted: " + "; ".join(changes) + ".")
-    parts += questions
-    parts.append("A few options that fit:" if recs.candidates
-                 else "Nothing on the menu fits every preference you've given me.")
-    return " ".join(parts), [c.item.id for c in recs.candidates[:MAX_PICKS]]
+    valid reply. `picks` are the model's own dishes when they passed and only its wording
+    failed (they follow the request, e.g. mains); otherwise the top-ranked dishes."""
+    if picks is None:
+        picks = [c.item.id for c in recs.candidates[:MAX_PICKS]]
+    parts = ([notice] if notice else []) + questions
+    if picks:
+        parts.append("A few options that fit:")
+    elif not recs.candidates:
+        parts.append("Nothing on the menu fits every preference you've given me.")
+    return " ".join(parts) or "I couldn't put a reply together just now; please ask again.", picks
 
 
 _PLURALS = (("ies", "y"), ("es", ""), ("s", ""))  # berries, tomatoes, mushrooms

@@ -103,6 +103,8 @@ RULES
 what the customer no longer is, emit negate with the old value.
 - Never infer a preference from a question or an order. "Does this have sesame?" is not an \
 allergy.
+- Claims are only about the customer and anyone eating with them now. Another person's \
+diet or allergy is never the customer's, even when the message compares the two.
 - One claim per fact.
 
 EXAMPLES
@@ -217,7 +219,8 @@ REPLY_SYSTEM = """\
 A restaurant assistant asked the customer a yes/no question about changing their saved \
 preferences. Classify the customer's reply to that question.
 - yes: clearly agrees to exactly the change asked about.
-- no: clearly declines it, or asks to keep things as they are.
+- no: clearly declines it, or asks to keep things as they are. Limiting the change to now \
+("only this time") declines saving it for future visits.
 - unclear: anything else, including hedges ("I guess", "probably"), questions back, a \
 different change than the one asked about, or no answer.
 When in doubt, answer unclear. "unclear" changes nothing; the assistant will ask again.

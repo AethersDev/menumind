@@ -102,7 +102,12 @@ message
 If the extractor fails, the app stops there: nothing is saved, no pending question is
 answered, and nothing is recommended, because the unread message may have stated an allergy.
 If only the reply model fails, or breaks a rule twice in a row, the app answers with a reply
-built from verified data: the changes it saved and the top eligible dishes.
+built from verified data: the model's own dishes when only its wording broke a rule, or else
+the top eligible dishes.
+
+Every reply that changed a preference starts with a line the app writes, not the model:
+"Every visit: ..." for what is saved and "Just this conversation: ..." for what is temporary,
+matching the ticket. In live runs the model sometimes called a saved change temporary.
 
 ## Files
 
@@ -125,7 +130,7 @@ built from verified data: the changes it saved and the top eligible dishes.
 ## Tests and evaluation
 
 ```bash
-pytest                                        # 187 tests, no API calls
+pytest                                        # 188 tests, no API calls
 ```
 
 The tests use a scripted model. Evidence that MenuMind works with a real model comes from two

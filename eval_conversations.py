@@ -78,7 +78,8 @@ def run_case(case: dict, client, model: str, menu: Menu) -> list[dict]:
             "failed": check(t.get("expect", {}), r, agent.profile(user, convs[user]), menu),
             "changes": r.changes, "question": r.question, "claims": r.trace["claims"],
             "decisions": r.trace.get("decisions", []), "extract_error": r.trace["extract_error"],
-            "fallback": r.trace.get("fallback", False), "reply_errors": r.trace.get("reply_errors", [])})
+            "fallback": r.trace.get("fallback", False), "reply_errors": r.trace.get("reply_errors", []),
+            "rejected_outputs": r.trace.get("rejected", [])})
     agent.store.close()
     return turns
 
