@@ -6,3 +6,10 @@ data/
 !.env.example
 eval_report*.json
 .DS_Store
+video/.venv/
+video/clips/
+video/vo_scratch/
+video/voice/
+video/*.mp4
+video/assets/cards/
+video/assets/capture_data.json

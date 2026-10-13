@@ -1,0 +1,131 @@
+"""The walkthrough, section by section: what is said and what is shown.
+
+The single source for the narration, the voice cues and the storyboard (build.py writes
+those from here), so the script, the recordings and the picture cannot drift apart.
+
+A visual is ("capture", beat) for real footage filmed by capture.py, or ("card", name) for
+a slide in assets/cards.html. With several visuals, all but the last get a fixed number of
+seconds and the last fills the rest of the section.
+"""
+
+SECTIONS = [
+    # ------------------------------------------------------------------ part 1: the product
+    dict(id="S01", part="Product", title="Title", visual=[("card", "title")],
+         text="This is MenuMind: a restaurant assistant that learns what each customer likes and "
+              "what they can't eat, remembers it between visits, and only ever recommends real "
+              "dishes from the menu."),
+    dict(id="S02", part="Product", title="The brief", visual=[("card", "brief")],
+         text="The brief asked for six things: natural conversation, menu recommendations, "
+              "long-term memory, updates to preferences, returning customers kept separate, and a "
+              "deployed interface. For the advanced challenge I chose memory: preferences that "
+              "change over time, where some changes are permanent, some last one evening, and some "
+              "are dangerous to get wrong."),
+    dict(id="S03", part="Product", title="A customer signs up", visual=[("capture", "signup")],
+         text="A customer, Maya, creates an account with a username and a PIN. On the right is her "
+              "order ticket. It shows everything MenuMind remembers, in two parts: every visit, and "
+              "just this conversation. For now, it's empty."),
+    dict(id="S04", part="Product", title="Talking normally", visual=[("capture", "spicy")],
+         text="Maya just talks: she loves spicy food, but hates mushrooms. The first line of the "
+              "reply is written by the app, not by the model, and says exactly what was saved. The "
+              "recommended dishes, with their names and prices, come from the menu. Under 'How I "
+              "read that', you can see each claim the model extracted, and the rule that decided "
+              "what to do with it."),
+    dict(id="S05", part="Product", title="An allergy", visual=[("capture", "allergy")],
+         text="Now an allergy, and a request for a main course. Allergies and diets are hard "
+              "restrictions. They're applied in code before the model sees a single dish, so satay "
+              "and pad thai can't be suggested. The model can only choose among dishes that have "
+              "already passed."),
+    dict(id="S06", part="Product", title="A question saves nothing", visual=[("capture", "question")],
+         text="A question isn't a preference. Asking whether the pad thai has peanuts saves "
+              "nothing. And when the reply mentions a dish Maya has to avoid, the warning next to it "
+              "is added by the app."),
+    dict(id="S06b", part="Product", title="Not sure", visual=[("capture", "hedged")],
+         text="Uncertainty is handled too. When Maya says she thinks she might be allergic to "
+              "shellfish, MenuMind avoids shellfish straight away, for this conversation, and asks "
+              "whether to save it for future visits. She says no, just for tonight, so it stays "
+              "temporary."),
+    dict(id="S07", part="Product", title="Just tonight", visual=[("capture", "tonight")],
+         text="'Tonight' is not 'always'. Maya asks for nothing spicy tonight, and a budget of "
+              "fifteen dollars. Both apply only to this conversation, and the ticket shows each one "
+              "next to the saved value it overrides."),
+    dict(id="S08", part="Product", title="Coming back", visual=[("capture", "return")],
+         text="Maya signs out, and later signs back in. In a new conversation, her saved "
+              "preferences are all here, while tonight's exceptions, the spice, the budget and the "
+              "shellfish, are gone."),
+    dict(id="S09", part="Product", title="Removing an allergy",
+         visual=[("capture", "remove_ask"), ("capture", "remove_yes")],
+         text="Removing an allergy is the riskiest change, so MenuMind never does it on a single "
+              "sentence. It asks first, and until Maya answers yes, peanuts stay excluded. Once she "
+              "confirms, the allergy is removed, and nothing else she told MenuMind changes."),
+    dict(id="S10", part="Product", title="Another customer", visual=[("capture", "sam")],
+         text="A second customer, Sam, signs up in another browser. He sees nothing of Maya's "
+              "memory, and the server won't let him open her conversations."),
+    # -------------------------------------------------------------- part 2: the engineering
+    dict(id="S11", part="Engineering", title="How it works", visual=[("card", "architecture")],
+         text="Here's how it works. The language model has three narrow jobs: reading a message "
+              "into structured claims, reading a yes or a no, and writing the reply. It never "
+              "decides what is stored or what is recommended. Code does. Fixed rules turn each claim "
+              "into a change. Changes go into an append-only event log, and the profile is computed "
+              "from that log. Recommendations are filtered and ranked in code, and the reply model "
+              "can only pick from them, by ID."),
+    dict(id="S12a", part="Engineering", title="One conflict: the claim", visual=[("card", "claim")],
+         text="Let's follow one conflict from end to end. Maya had saved a peanut allergy, then said "
+              "she no longer has it. This is what the extractor produced: an allergen, negated, "
+              "current, stated plainly. It describes what was said. It doesn't decide anything."),
+    dict(id="S12b", part="Engineering", title="One conflict: the rule", visual=[("card", "rules")],
+         text="The decision is made by code, using eleven ordered rules. A lasting change is "
+              "compared with both the saved profile and the one in force right now. Loosening an "
+              "allergy always goes through rule R10: ask first, however certain the sentence "
+              "sounds. The costs are lopsided: one extra question, against serving an allergen."),
+    dict(id="S12c", part="Engineering", title="One conflict: the question", visual=[("card", "pending")],
+         text="The question is held as a proposal tied to Maya, to this conversation, and to the "
+              "last event number. If anything changes her peanut allergy from another device before "
+              "she answers, her yes is rejected as out of date."),
+    dict(id="S12d", part="Engineering", title="One conflict: the log", visual=[("card", "events")],
+         text="When she says yes, one event is appended and marked as confirmed. Nothing is "
+              "overwritten: the log keeps the whole history, and the profile is computed from it "
+              "the same way every time."),
+    dict(id="S13", part="Engineering", title="Grounded replies", visual=[("card", "grounding")],
+         text="The reply model answers in a fixed format: a message, and the IDs of the dishes it "
+              "recommends. Code rejects any dish outside the eligible set and any dish name or price "
+              "the model types itself, then writes names and prices from the menu. If the model "
+              "breaks a rule twice, the app answers from verified data instead. And if a message "
+              "can't be read at all, MenuMind fails closed: nothing is saved, and nothing is "
+              "recommended."),
+    dict(id="S14", part="Engineering", title="Menu data", visual=[("card", "recipes", 17.0),
+                                                                    ("capture", "menu_note")],
+         text="Recommendations are only as safe as the menu data, so the menu won't load unless "
+              "every dish's allergens and diet match its ingredients. Prepared ingredients have "
+              "declared house recipes, and recipes can contain other recipes. When one recipe "
+              "contradicted a dish's label, the label was corrected, not the recipe. And the app "
+              "tells customers that cross-contact in the kitchen isn't covered."),
+    dict(id="S14b", part="Engineering", title="Tests and acceptance", visual=[("card", "testing")],
+         text="Underneath, a hundred and ninety-five tests run without any model. They cover every "
+              "decision rule, including a sweep of a hundred and forty claims from three starting "
+              "states, which checks that no allergy or diet is ever loosened without a yes. Code "
+              "fixes were checked twice: by a test that failed before the fix, and by breaking the "
+              "fix on purpose to see a test catch it. And an acceptance test drives the running app "
+              "over HTTP: memory across conversations and a server restart, confirmation before a "
+              "removal, and customers kept apart."),
+    dict(id="S15", part="Engineering", title="Evidence with a real model", visual=[("card", "evidence")],
+         text="The unit tests use a scripted model, so to show that this works with a real one, I "
+              "built two live evaluations: thirty-two phrasings for the extractor, and fourteen "
+              "scripted conversations, each run three times. I read every run in full and fixed "
+              "what it found, over four rounds. In the final run, there were no unsafe "
+              "recommendations in seventy-five turns, every allergy and diet was caught, and nothing "
+              "was loosened without a yes. The misses that remain are documented, and none of them "
+              "involves an allergy."),
+    dict(id="S15b", part="Engineering", title="What the live runs caught", visual=[("card", "lessons")],
+         text="The live runs were worth it. In the first, 'I'm allergic to nuts' saved only tree "
+              "nuts, every time; the extraction rules now say that nuts, with no nut named, means "
+              "peanuts too. In the third, a rule I had just added made the extractor drop a "
+              "companion's allergy. That run caught it, and the fourth confirmed the fix. Reading "
+              "every run in full, replies included, is what found both."),
+    dict(id="S16", part="Engineering", title="Limits", visual=[("card", "limits")],
+         text="The limits are written down plainly. MenuMind runs as a single server instance. Its "
+              "allergen data covers declared recipes, not cross-contact. And the wording of replies "
+              "is checked, but not proven. What it does guarantee is narrower, and stronger: the "
+              "model can describe, but code decides."),
+    dict(id="S17", part="Close", title="Thank you", visual=[("card", "close")],
+         text="Thank you for watching."),
+]

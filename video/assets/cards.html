@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>MenuMind walkthrough cards</title>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #E9EFE8; --paper-2: #F6F8F4; --card: #FBFCF9; --ink: #1F2A3D; --ink-soft: #4D5A6E;
+  --muted: #6B7787; --jade: #3F7A66; --jade-soft: #D6E7DF; --amber: #D9962B; --amber-soft: #F6E3BF;
+  --brick: #A8432F; --rail: #B9C5BC;
+  --display: "Bricolage Grotesque", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; }
+body { background: var(--paper); color: var(--ink); font: 30px/1.45 var(--body); }
+.card { position: absolute; inset: 0; padding: 96px 128px; display: flex; flex-direction: column; }
+.eyebrow { font: 700 22px/1 var(--body); letter-spacing: .14em; text-transform: uppercase; color: var(--jade); }
+h1 { font: 700 76px/1.05 var(--display); letter-spacing: -.02em; margin: 18px 0 28px; }
+h2 { font: 700 30px/1.2 var(--display); margin: 0 0 12px; }
+p { margin: 0 0 18px; }
+.soft { color: var(--ink-soft); }
+.small { font-size: 24px; }
+.mono { font-family: var(--mono); }
+.grid { display: grid; gap: 28px; }
+.box { background: var(--card); border: 2px solid var(--rail); border-radius: 14px; padding: 26px 30px; }
+.box.code { background: #1F2A3D; color: #EEF2EC; border-color: #1F2A3D; font: 25px/1.55 var(--mono); white-space: pre; }
+.code .k { color: #9FD3BF; } .code .s { color: #F2C77A; } .code .c { color: #93A0B4; }
+.tag { display: inline-block; font: 700 20px/1 var(--body); padding: 8px 12px; border-radius: 999px;
+  background: var(--jade-soft); color: var(--jade); letter-spacing: .04em; }
+.tag.amber { background: var(--amber-soft); color: #8A5A10; }
+.foot { margin-top: auto; color: var(--muted); font-size: 22px; }
+table { border-collapse: collapse; width: 100%; font-size: 24px; }
+th { text-align: left; font: 700 20px/1.2 var(--body); color: var(--muted); letter-spacing: .06em;
+  text-transform: uppercase; padding: 10px 14px; border-bottom: 2px solid var(--rail); }
+td { padding: 11px 14px; border-bottom: 1px solid #D5DED6; vertical-align: top; }
+tr.hl td { background: var(--amber-soft); }
+.arrow { font: 700 40px/1 var(--body); color: var(--muted); align-self: center; }
+/* title */
+.title h1 { font-size: 150px; margin: 0; }
+.title .sub { font: 500 46px/1.25 var(--display); color: var(--ink-soft); margin-top: 18px; }
+/* architecture */
+.lane { display: flex; align-items: stretch; gap: 18px; }
+.lane .box { flex: 1; padding: 20px 22px; font-size: 25px; }
+.lane .box b { display: block; font: 700 26px/1.2 var(--display); margin-bottom: 6px; }
+.lane-label { font: 700 22px/1 var(--body); letter-spacing: .1em; text-transform: uppercase; margin: 6px 0 12px; }
+.llm .box { border-color: var(--amber); background: #FFF9EE; }
+/* evidence */
+.hero { display: flex; align-items: baseline; gap: 28px; }
+.hero .n { font: 700 150px/1 var(--body); color: var(--ink); }
+.hero .t { font: 700 40px/1.2 var(--body); }
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; margin-top: 34px; }
+.kpi { background: var(--card); border: 2px solid var(--rail); border-radius: 14px; padding: 22px 26px; }
+.kpi .label { font-size: 22px; color: var(--ink-soft); }
+.kpi .value { font: 700 50px/1.1 var(--body); margin-top: 8px; }
+.kpi .note { font-size: 20px; color: var(--muted); margin-top: 4px; }
+.bars { display: flex; align-items: flex-end; gap: 26px; height: 210px; padding-top: 10px; }
+.bar { width: 110px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+.bar .fill { width: 100%; background: var(--jade); border-radius: 4px 4px 0 0; }
+.bar .v { font: 700 24px/1 var(--body); margin-bottom: 8px; color: var(--ink); }
+.bar .x { font-size: 20px; color: var(--muted); margin-top: 10px; }
+/* recipes */
+.tree { font: 26px/1.6 var(--mono); white-space: pre; }
+.tree .al { color: var(--brick); font-weight: 600; }
+ul.plain { margin: 0; padding-left: 1.1em; } ul.plain li { margin-bottom: 14px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const D = window.DATA || {};
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+const claim = (D.removal_turn?.claims || [])[0] || {};
+const decision = (D.removal_turn?.decisions || [])[0] || {};
+const events = D.events || [];
+
+const CARDS = {
+title: () => `<div class="card title" style="justify-content:center">
+  <div class="eyebrow">Foodics · AI Engineer take-home</div>
+  <h1>MenuMind</h1>
+  <div class="sub">A grounded, memory-aware restaurant assistant</div>
+  <p class="soft" style="margin-top:44px">Serving the menu of Lantern Street Kitchen, a fictional restaurant</p>
+  <div class="foot">Malek · October 2026</div></div>`,
+
+brief: () => `<div class="card"><div class="eyebrow">The brief</div><h1>Six requirements, one hard problem</h1>
+  <div class="grid" style="grid-template-columns:1fr 1fr 1fr">
+    ${["Natural conversation", "Menu recommendations", "Long-term memory", "Updating preferences",
+       "Returning customers, kept separate", "A deployed interface"].map((t, i) =>
+      `<div class="box"><span class="soft small">${i + 1}</span><h2 style="margin-top:6px">${t}</h2></div>`).join("")}
+  </div>
+  <div class="box" style="margin-top:34px;border-color:var(--jade)"><span class="tag">Advanced challenge</span>
+    <h2 style="margin-top:14px">Preferences that change over time</h2>
+    <p class="soft" style="margin:0">Some changes are permanent, some last one evening, and some are dangerous to get wrong.</p></div></div>`,
+
+architecture: () => `<div class="card"><div class="eyebrow">How it works</div><h1>The model describes. Code decides.</h1>
+  <div class="lane-label" style="color:#8A5A10">Language model: three narrow jobs</div>
+  <div class="lane llm">
+    <div class="box"><b>Read the message</b>into typed claims (structured output)</div>
+    <div class="box"><b>Read a yes or no</b>to a pending question</div>
+    <div class="box"><b>Write the reply</b>a message + IDs of dishes it recommends</div>
+  </div>
+  <div class="lane-label" style="color:var(--jade);margin-top:30px">Code: every decision</div>
+  <div class="lane">
+    <div class="box"><b>Decide</b>11 ordered rules: apply, ask, clarify or ignore</div><div class="arrow">→</div>
+    <div class="box"><b>Event log</b>append-only, per customer (SQLite)</div><div class="arrow">→</div>
+    <div class="box"><b>Profile</b>computed from the log: saved + this conversation</div><div class="arrow">→</div>
+    <div class="box"><b>Recommend</b>allergies and diet filter; tastes rank</div><div class="arrow">→</div>
+    <div class="box"><b>Check & render</b>eligible IDs only; names and prices from the menu</div>
+  </div>
+  <div class="foot">The model never chooses what is stored or what is recommended.</div></div>`,
+
+claim: () => `<div class="card"><div class="eyebrow">One conflict, end to end · 1 of 4</div>
+  <h1>What the extractor produced</h1>
+  <div class="grid" style="grid-template-columns:1.1fr 1fr;align-items:start">
+    <div class="box code">${esc(JSON.stringify({attribute: claim.attribute, polarity: claim.polarity,
+      subject: claim.subject, temporal: claim.temporal, modality: claim.modality, evidence: claim.evidence},
+      null, 2)).replace(/"(\w+)":/g, '<span class="k">"$1"</span>:').replace(/: "([^"]*)"/g, ': <span class="s">"$1"</span>')}</div>
+    <div><p>Maya had saved a <b>peanut allergy</b>. Then she wrote:</p>
+      <p class="box" style="font-size:34px">“${esc(D.removal_turn?.say)}”</p>
+      <p class="soft">A description of what was said: an allergen, negated, current, stated plainly.
+      <b>No decision.</b></p></div>
+  </div>
+  <div class="foot">Captured from the live app (gpt-5.4-mini).</div></div>`,
+
+rules: () => `<div class="card"><div class="eyebrow">One conflict, end to end · 2 of 4</div>
+  <h1>The rule that decides: R10</h1>
+  <table><tr><th>Rule</th><th>When</th><th>Outcome</th></tr>
+    <tr><td>R1–R2</td><td>A past or hypothetical statement</td><td>Ask, or no change</td></tr>
+    <tr><td>R3–R4</td><td>An aspiration (“trying to eat less meat”)</td><td>A soft lean at most</td></tr>
+    <tr><td>R5</td><td>Negating a diet without naming the new one</td><td>Ask what replaces it</td></tr>
+    <tr><td>R6</td><td>A taste: spice, budget, likes and dislikes</td><td>Apply</td></tr>
+    <tr><td>R7–R9</td><td>Tightening an allergy or diet</td><td>Apply; if hedged, enforce now and ask</td></tr>
+    <tr class="hl"><td><b>R10</b></td><td><b>Loosening, if hedged or an allergy</b></td><td><b>Ask first. Nothing changes yet.</b></td></tr>
+    <tr><td>R11</td><td>A clear diet change that names the new diet</td><td>Apply</td></tr></table>
+  <p style="margin-top:26px">Decision for Maya's message: <span class="tag amber">${esc(decision.rule)} · ${esc(decision.outcome)}</span>
+    <span class="soft small" style="margin-left:12px">${esc(decision.reason)}</span></p>
+  <div class="foot">A lasting change is judged against both the saved profile and the one in force now.</div></div>`,
+
+pending: () => `<div class="card"><div class="eyebrow">One conflict, end to end · 3 of 4</div>
+  <h1>The question is bound, so a stale yes can't land</h1>
+  <div class="grid" style="grid-template-columns:1fr 1fr;align-items:start">
+    <div class="box code"><span class="c"># memory.py · Pending</span>
+<span class="k">user</span>           maya
+<span class="k">conversation</span>   this one only
+<span class="k">change</span>         REMOVE allergen peanut
+<span class="k">base_sequence</span>  the last event number
+<span class="k">question</span>       <span class="s">${esc((D.removal_turn?.question || "").split("?")[0])}?</span></div>
+    <div><h2>A “yes” is rejected if</h2><ul class="plain">
+      <li>it comes from another customer or conversation</li>
+      <li>any event touched peanut after the question was asked, e.g. from another device</li>
+      <li>the change would no longer change anything</li></ul>
+      <p class="soft">Until then, peanuts stay excluded.</p></div>
+  </div></div>`,
+
+events: () => `<div class="card"><div class="eyebrow">One conflict, end to end · 4 of 4</div>
+  <h1>Maya's event log</h1>
+  <table><tr><th>#</th><th>Attribute</th><th>Subject / value</th><th>Change</th><th>Scope</th><th>Source</th><th>Evidence</th></tr>
+  ${events.map((e, i) => `<tr class="${i === events.length - 1 ? "hl" : ""}"><td>${e.seq}</td><td>${esc(e.attribute)}</td>
+    <td>${esc(e.subject ?? JSON.parse(e.value ?? "null"))}</td><td>${esc(e.operation)}</td><td>${esc(e.scope)}</td>
+    <td>${esc(e.source)}</td><td class="soft">${esc((e.evidence || "").slice(0, 46))}</td></tr>`).join("")}</table>
+  <div class="foot">Append-only: nothing is overwritten. The profile is computed from these rows the same way every time.</div></div>`,
+
+grounding: () => `<div class="card"><div class="eyebrow">Grounded replies</div><h1>The reply model picks by ID; code writes the dish</h1>
+  <div class="grid" style="grid-template-columns:1fr 1fr 1fr;align-items:start">
+    <div><h2>1 · The model returns</h2><div class="box code" style="font-size:22px">{
+  <span class="k">"message"</span>: <span class="s">"…"</span>,
+  <span class="k">"recommend"</span>: [<span class="s">"M9"</span>, <span class="s">"D3"</span>]
+}</div><p class="soft small" style="margin-top:12px">A fixed JSON schema (structured output). Shape shown.</p></div>
+    <div><h2>2 · Code checks</h2><ul class="plain small">
+      <li>every ID is on the menu and passes the allergies and diet</li><li>at most three dishes</li>
+      <li>no dish name or price typed by the model</li></ul>
+      <p class="small soft">Broken twice → a reply built from verified data.<br>Message unreadable → nothing saved, nothing recommended.</p></div>
+    <div><h2>3 · Code renders</h2><div class="box" style="font-size:24px">
+      <b>Chana Masala</b> ($12.00)<br><b>Coconut Lime Sorbet</b> ($6.00)</div>
+      <p class="small soft" style="margin-top:12px">Names, prices and warnings come from the menu.</p></div>
+  </div></div>`,
+
+recipes: () => `<div class="card"><div class="eyebrow">Menu data</div><h1>Allergens are derived, then checked</h1>
+  <div class="grid" style="grid-template-columns:1fr 1fr;align-items:start">
+    <div class="box tree">teriyaki_sauce
+├─ soy_sauce  <span class="soft"># a house recipe</span>
+│  ├─ soybean     → <span class="al">soy</span>
+│  ├─ wheat       → <span class="al">gluten</span>
+│  └─ water, salt
+└─ sugar, ginger, garlic</div>
+    <div><ul class="plain">
+      <li>Every ingredient is classified; an unknown one stops the menu loading.</li>
+      <li>Prepared ingredients have declared house recipes, which can nest.</li>
+      <li>A dish's allergens and diet must match what its ingredients carry.</li>
+      <li>Gochujang's recipe has no wheat, so the Spicy Chicken Bowl's label was corrected: <b>the label, not the recipe</b>.</li></ul></div>
+  </div></div>`,
+
+testing: () => `<div class="card"><div class="eyebrow">Tests and acceptance</div><h1>Checked without a model, then end to end</h1>
+  <div class="grid" style="grid-template-columns:1fr 1.05fr;align-items:start">
+    <div><div class="kpi" style="margin-bottom:22px"><div class="label">Tests, no model calls</div><div class="value">195</div>
+      <div class="note">rules, memory, menu, recommender, server</div></div>
+      <ul class="plain small">
+        <li>A sweep of 140 claims from 3 starting states: nothing loosened without a yes</li>
+        <li>Each code fix: a test that failed before it, and a deliberate break a test caught</li></ul></div>
+    <div><h2>acceptance.py · over HTTP</h2>${D.acceptance
+      ? `<div class="box code" style="font-size:19px;line-height:1.45">${esc(D.acceptance)}</div>`
+      : `<ul class="plain small"><li>An allergy is saved and every recommendation avoids it</li>
+        <li>A new conversation and a server restart both keep it</li>
+        <li>Removing it asks first, and only a yes removes it</li><li>The rest of the memory is kept</li>
+        <li>Another customer sees none of it and can't open the conversation</li></ul>`}</div>
+  </div></div>`,
+
+lessons: () => `<div class="card"><div class="eyebrow">What the live runs caught</div><h1>Read every run in full</h1>
+  <table><tr><th>Run</th><th>Found</th><th>Fix</th></tr>
+    <tr><td>1</td><td>“I'm allergic to nuts” saved tree nut only, 4 times out of 4</td><td>Extraction rule: nuts with no nut named means peanut too. Then 4 of 4.</td></tr>
+    <tr><td>2</td><td>Replies called saved changes temporary (3 of 72 turns)</td><td>The app writes what was saved; the model no longer does</td></tr>
+    <tr class="hl"><td>3</td><td>A rule I had just added made the extractor drop a companion's allergy</td><td>Rule restated; run 4 confirmed: 10/10</td></tr>
+    <tr><td>4</td><td>0 unsafe recommendations; misses left involve no allergy</td><td>Documented in the README</td></tr></table>
+  <div class="foot">Fix the contract, not the test.</div></div>`,
+
+evidence: () => `<div class="card"><div class="eyebrow">Evidence with a real model · gpt-5.4-mini · final run</div>
+  <div class="hero" style="margin-top:22px"><span class="n">0</span><span class="t">unsafe recommendations<br><span class="soft" style="font-weight:400">in 75 live conversation turns</span></span></div>
+  <div class="kpis">
+    <div class="kpi"><div class="label">Allergies and diets caught</div><div class="value">10/10</div><div class="note">enforced now · 8/8 saved</div></div>
+    <div class="kpi"><div class="label">Loosened without a yes</div><div class="value">0</div><div class="note">applied or proposed</div></div>
+    <div class="kpi"><div class="label">Answers misread as yes</div><div class="value">0 of 18</div><div class="note">confirmation replies</div></div>
+    <div class="kpi"><div class="label">Conversations fully correct</div><div class="value">41 of 42</div><div class="note">14 conversations × 3 repeats</div></div>
+  </div>
+  <div style="display:flex;gap:60px;margin-top:40px;align-items:flex-end">
+    <div><div class="small soft" style="margin-bottom:6px">Conversations fully correct, by round of fixes</div>
+      <div class="bars">${[["Run 1", 34, 39], ["Run 2", 38, 39], ["Run 3", 39, 39], ["Run 4", 41, 42]].map(([x, a, b]) =>
+        `<div class="bar"><div class="v">${a}/${b}</div><div class="fill" style="height:${Math.round(150 * a / b)}px"></div><div class="x">${x}</div></div>`).join("")}</div></div>
+    <p class="small soft" style="max-width:780px">Each run read in full, replies included, then fixed. Remaining misses are documented in the README; none involves an allergy. Offline: 195 tests with a scripted model.</p>
+  </div></div>`,
+
+limits: () => `<div class="card"><div class="eyebrow">Limits, stated plainly</div><h1>Narrower, and stronger</h1>
+  <ul class="plain" style="font-size:34px">
+    <li>One server instance: memory updates are serialized inside the process.</li>
+    <li>Allergen data covers declared recipes, not cross-contact in a kitchen.</li>
+    <li>Reply wording is checked for dish names and prices, not proven correct.</li></ul>
+  <div class="box" style="margin-top:30px;border-color:var(--jade)"><h2 style="margin:0">The model can describe. Code decides.</h2></div></div>`,
+
+close: () => `<div class="card title" style="justify-content:center"><h1>MenuMind</h1>
+  <div class="sub">Thank you for watching</div>
+  <div class="grid" style="margin-top:56px;gap:14px;font-size:30px">
+    <div><span class="soft">Live app</span> · <span class="mono">${esc(D.url || "link added at publishing")}</span></div>
+    <div><span class="soft">Source</span> · <span class="mono">${esc(D.repo || "link added at publishing")}</span></div></div></div>`,
+};
+
+const name = new URLSearchParams(location.search).get("card");
+document.getElementById("root").innerHTML = CARDS[name]();
+document.fonts.ready.then(() => { document.body.dataset.ready = "1"; });
+</script>
+</body>
+</html>

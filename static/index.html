@@ -135,6 +135,8 @@ dialog::backdrop { background: rgba(31, 42, 61, .45); }
 .menu-body { padding: 4px 22px 22px; max-height: 70vh; overflow-y: auto; }
 .menu-body h3 { font: 500 19px/1.2 var(--display); margin: 22px 0 6px; }
 .dish { padding: 10px 0; border-top: 1px dashed var(--rail); }
+.menu-note { margin: 0; padding: 12px 22px 18px; color: var(--ink-soft); font-size: 15px;
+  border-top: 1px solid var(--rail); }
 .dish .top { display: flex; gap: 12px; }
 .dish .top strong { flex: 1; }
 .dish .meta, .dish .ing { color: var(--ink-soft); font-size: 15px; }
@@ -217,6 +219,8 @@ dialog::backdrop { background: rgba(31, 42, 61, .45); }
 <dialog id="menu">
   <div class="menu-head"><h2 id="menu-title">Menu</h2><button class="link" id="close-menu">Close</button></div>
   <div class="menu-body" id="menu-body"></div>
+  <p class="menu-note">Allergens and diets come from the kitchen's declared recipes. Cross-contact
+    in the kitchen isn't covered: with a severe allergy, please check with staff.</p>
 </dialog>
 
 <script>
