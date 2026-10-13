@@ -157,6 +157,47 @@ diet. It reports unsafe recommendations first, then correct cases and turns, ext
 failures, fallback replies, rejected model replies, a heuristic count of replies that call a
 saved change temporary, and latency. It keeps every reply in the JSON report for reading. Run with `--repeats` to see how often the model varies.
 
+## Evidence with a real model
+
+Measured on 2026-10-13 on the code in this commit, with `gpt-5.4-mini` (OpenAI, Chat
+Completions) for every model call: `eval_extractor.py`, then `eval_conversations.py --repeats 3`.
+
+| What | Result |
+|---|---|
+| Unsafe recommendations (a dish the customer's allergies or diet rule out) | 0 in 75 turns |
+| Hard restrictions captured: enforced now, remembered | 10/10, 8/8 |
+| Unsafe loosenings applied, proposed | 0, 0 |
+| False "yes" readings of confirmation answers | 0 of 18 |
+| Restrictions saved that nobody stated | 0 |
+| Conversations, turns fully correct | 41/42, 74/75 |
+| Fallback replies (model output unusable twice) | 0 |
+| Extractor decision accuracy, exact claims | 0.969, 0.812 |
+| Yes/no classifier accuracy | 17/18 |
+| Latency: extraction mean, p95; whole turn mean, p95, max | 1.2 s, 1.5 s; 2.5 s, 3.7 s, 5.0 s |
+
+Misses in that run, none of them involving an allergy or diet:
+
+- "I don't like spicy food anymore." cleared the spice preference instead of setting it to
+  none in 1 of 3 conversations, so spicy dishes were not ranked down.
+- "It's not that I don't like mushrooms, I just don't want them today." was read as a like.
+- "Sure, and nothing spicy tonight." as the answer to an allergy-removal question was read as
+  unclear, so the question stayed open.
+
+The result took four runs. Each was read in full, replies included, and followed by a fix:
+
+| Run | What it found | Fix |
+|---|---|---|
+| 1 | "Nuts" saved as tree nut only (4 of 4); a correction to cashews saved as a like; "I love spicy food" saved as an ingredient; "I used to be vegetarian" read backwards; 6 replies called a saved change temporary | Extraction rules stated explicitly |
+| 2 | A request for a main fell back to starters; 3 replies still called a saved change temporary; a friend's diet saved as the customer's | The app writes the saved/temporary line; the fallback keeps the model's valid dishes; third-party rule |
+| 3 | 39/39 conversations, but the third-party rule made the extractor drop a companion's allergy (9/10) | Rule restated so companions count |
+| 4 | The table above | |
+
+Limits: 32 phrasings, 18 answers and 14 conversations show that the model handles these, not
+every phrasing, so the numbers are counts, not rates. Model output varies even with the same
+code (in run 4 the spice sentence failed in 1 of 3 repeats), so use `--repeats` and rerun
+both evaluations after any change to a prompt or model. Reply text is checked for typed dish names and prices, not
+for every factual claim; the JSON reports keep every reply for reading.
+
 ## Deploying from GitHub
 
 GitHub Pages only serves static files, and this app needs a running server (it holds the API
