@@ -229,6 +229,7 @@ def test_users_are_isolated(tmp_path):
     bob = fake.briefings[-1]
     assert bob["profile"]["saved"]["allergen"] == bob["profile"]["enforced_now"]["allergen"] == []
     assert bob["unsuitable"] == []  # alice's peanut allergy excludes nothing for bob
+    assert len(bob["recommendable"]) == len(MENU.items)  # the model can offer any category
 
 
 def test_allergy_removal_needs_confirmation(tmp_path):
@@ -255,13 +256,18 @@ def test_unclear_answer_changes_nothing_and_asks_again(tmp_path):
 
 
 def test_recommended_dishes_are_rendered_by_code(tmp_path):
-    """The model picks dishes by ID; code writes each one's menu name, price and reasons."""
+    """The model picks dishes by ID; code writes each one's menu name, price and reasons,
+    once: a dish the message already names is not listed again (seen in live replies)."""
     agent, _ = make_agent(tmp_path, responder=lambda b, m: says("Two good fits.", "M2", "D3"))
     c1 = agent.start_conversation("alice")
     r = agent.turn("alice", c1, SPICY)
     assert r.reply == ("Two good fits.\n\n"
                        "- **Green Curry with Tofu** ($14.00): matches your spice level (hot)\n"
                        "- **Coconut Lime Sorbet** ($6.00)")
+    assert [(m["id"], m["kind"]) for m in r.mentioned] == [("M2", "rec"), ("D3", "rec")]
+    agent.client.responder = lambda b, m: says("Try [[item:M2]].", "M2", "D3")
+    r = agent.turn("alice", c1, "What do you recommend?")
+    assert r.reply == "Try **Green Curry with Tofu** ($14.00).\n\n- **Coconut Lime Sorbet** ($6.00)"
     assert [(m["id"], m["kind"]) for m in r.mentioned] == [("M2", "rec"), ("D3", "rec")]
 
 

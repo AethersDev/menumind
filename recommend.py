@@ -2,9 +2,10 @@
 
 Hard constraints (allergens, diet) filter in code; the model never sees a violating dish as a
 recommendable option. Soft preferences rank what is left. The reply model returns a message
-and, separately, the IDs of the dishes it recommends. Code writes every recommended dish
-(name, price, the ranking's reasons) and accepts only IDs from the eligible set. In the
-message, the model may mention a dish only as a token:
+and, separately, the IDs of the dishes it recommends. Code accepts only IDs from the eligible
+set and writes every recommended dish once: where the message names it, or in a list under
+the message with the ranking's reasons. In the message, the model may mention a dish only as
+a token:
 
     [[item:M5]]  any dish, e.g. when answering a question; a dish the user must avoid is
                  rendered with a warning written by code
@@ -128,7 +129,8 @@ def _price(p: float) -> str:
 def render(message: str, picks: list, menu: Menu, recs: Recommendations,
            budget) -> tuple[str, list[dict]]:
     """Replace tokens with names and prices from the menu, then list the recommended dishes
-    with their reasons. Call only after check_reply()."""
+    the message did not already name, with their reasons. Each recommended dish appears once.
+    Call only after check_reply()."""
     mentioned: list[dict] = []
     over_ids = {c.item.id for c in recs.over_budget}  # non-empty only when budget is set
     reasons = {c.item.id: c.reasons for c in recs.candidates + recs.over_budget}
@@ -147,7 +149,9 @@ def render(message: str, picks: list, menu: Menu, recs: Recommendations,
             return f"{text} [{', '.join(warnings)}]"
         return text
 
-    text = TOKEN.sub(lambda m: label(m.group(1), m.group(2)), message)
+    text = TOKEN.sub(lambda m: label("rec" if m.group(2) in picks else m.group(1), m.group(2)),
+                     message)
+    named = {item_id for _, item_id in TOKEN.findall(message)}
     lines = [f"- {label('rec', i)}" + (f": {'; '.join(reasons[i])}" if reasons[i] else "")
-             for i in picks]
+             for i in picks if i not in named]
     return ("\n\n".join([text, "\n".join(lines)]) if lines else text), mentioned

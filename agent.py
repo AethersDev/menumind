@@ -33,7 +33,6 @@ from menu import Menu
 from recommend import MAX_PICKS, Recommendations, check_reply, recommend, render
 
 HISTORY_MESSAGES = 8
-RECOMMENDABLE_LIMIT = 8
 CONVERSATION_IDLE_SECONDS = 3 * 60 * 60  # a conversation ends after this long unused (SPEC §12.2)
 MAX_CONVERSATIONS_PER_USER = 5          # open at once; starting another drops the oldest
 MAX_CONVERSATIONS = 1000                # in memory across all users
@@ -50,7 +49,8 @@ this menu. Each turn you receive the customer's message and a JSON briefing from
 
 Answer in JSON. "message" is what you say to the customer. "recommend" lists the IDs of the \
 dishes you recommend this turn, or is empty when they don't want a suggestion. The app shows \
-each recommended dish under your message with its name, price and reasons.
+each recommended dish once, with its name and price: where your message mentions it as \
+[[item:ID]], or else in a list under your message, with its reasons.
 
 RULES
 1. Recommend at most three dishes, only with IDs from "recommendable" or "over_budget". \
@@ -67,10 +67,11 @@ with [[item:ID]]; the app adds the warning.
 5. "profile" has what is enforced now ("enforced_now") and what is saved for future visits \
 ("saved"). Where they differ, the difference holds only for this conversation.
 6. If "questions_to_ask" is not empty, ask those questions, keeping their meaning.
-7. If "changes" is not empty, acknowledge them briefly in plain words.
+7. If "changes" is not empty, acknowledge them briefly in plain words. A change marked \
+"(this conversation)" lasts only for this conversation; every other change is saved for \
+future visits.
 8. If "notice" is present, pass it on to the customer.
-9. Be brief: at most five sentences, plain text, no headings. Don't repeat what the app \
-lists for the recommended dishes.
+9. Be brief: at most five sentences, plain text, no headings.
 """
 
 TURN_SCHEMA = {
@@ -173,8 +174,6 @@ class Agent:
         self._lock = threading.Lock()
         self._convs: OrderedDict[tuple[str, str], _ConvState] = OrderedDict()  # oldest use first
         self._system = REPLY_SYSTEM.format(restaurant=menu.restaurant)
-        self._words = frozenset(w for i in menu.items for ing in i.ingredients
-                                for w in (ing, *ing.split("_")))  # "shiitake_mushroom", "mushroom"
 
     @property
     def client(self):
@@ -230,7 +229,7 @@ class Agent:
         with self._lock:
             state = self._state(user_id, conversation_id)  # unknown ids fail before any model call
         ext = extract(text, client=self.client, model=self.extract_model)
-        claims = [_menu_word(c, self._words) for c in ext.claims]
+        claims = menu_words(ext.claims, self.menu)
         trace["claims"] = [_claim_dict(c) for c in claims]
         trace["extract_error"] = ext.error
 
@@ -296,8 +295,9 @@ class Agent:
             "profile": {"enforced_now": _plain(profile.active), "saved": _plain(profile.durable)},
             "changes": changes,
             "questions_to_ask": questions,
-            "recommendable": [cand(c) for c in recs.candidates[:RECOMMENDABLE_LIMIT]],
-            "over_budget": [cand(c) for c in recs.over_budget[:3]],
+            # every eligible dish: a cut by rank can leave out a whole category (all mains)
+            "recommendable": [cand(c) for c in recs.candidates],
+            "over_budget": [cand(c) for c in recs.over_budget],
             "unsuitable": [{"id": i, "name": self.menu.get(i).name, "why": why}
                            for i, why in recs.excluded.items()],
             "menu": [i.public() for i in self.menu.items],
@@ -370,15 +370,21 @@ def fallback_reply(recs: Recommendations, changes: list, questions: list,
 _PLURALS = (("ies", "y"), ("es", ""), ("s", ""))  # berries, tomatoes, mushrooms
 
 
-def _menu_word(c: Claim, words: frozenset) -> Claim:
-    """A plural ingredient whose singular is a menu word becomes that word ("mushrooms" ->
-    "mushroom"). Stored as said, it would match no dish, and a later statement about the same
-    food would land on a different key. Anything else passes unchanged."""
-    s = c.subject
-    if c.attribute not in ("disliked_ingredient", "liked_ingredient") or s in words:
-        return c
-    return next((replace(c, subject=s[:-len(end)] + add) for end, add in _PLURALS
-                 if s.endswith(end) and s[:-len(end)] + add in words), c)
+def menu_words(claims: list[Claim], menu: Menu) -> list[Claim]:
+    """Spell liked and disliked ingredients as the menu does: a plural whose singular is a
+    menu word becomes that word ("mushrooms" -> "mushroom"). Stored as said, it would match no
+    dish, and a later statement about the same food would land on a different key. Anything
+    else passes unchanged."""
+    words = {w for i in menu.items for ing in i.ingredients for w in (ing, *ing.split("_"))}
+
+    def word(s: str) -> str:
+        if s in words:
+            return s
+        return next((s[:-len(end)] + add for end, add in _PLURALS
+                     if s.endswith(end) and s[:-len(end)] + add in words), s)
+
+    return [replace(c, subject=word(c.subject))
+            if c.attribute in ("disliked_ingredient", "liked_ingredient") else c for c in claims]
 
 
 def _drafts(events) -> list[Draft]:

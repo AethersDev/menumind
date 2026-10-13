@@ -1,0 +1,67 @@
+{
+  "notes": "Live end-to-end cases for eval_conversations.py. Each case is one fresh customer in a fresh database. After a turn, `expect` checks what the app did, never the wording: durable (saved) and active (enforced now) profile values, asks (a yes/no question is pending), recommends, category and max_price of the recommended dishes. Every recommended dish is always checked against the customer's allergies and diet. Turn options: new_conversation, restart (new process, same database), user (another customer).",
+  "cases": [
+    {"id": "req1-natural-preferences", "turns": [
+      {"say": "I love spicy food, but I hate mushrooms.",
+       "expect": {"durable": {"spice_tolerance": "hot", "disliked_ingredient": ["mushroom"]}}}]},
+
+    {"id": "req2-main-under-15", "turns": [
+      {"say": "What should I get for a main under $15?",
+       "expect": {"recommends": true, "category": "main", "max_price": 15}}]},
+
+    {"id": "req3-memory-across-visits-and-restart", "turns": [
+      {"say": "I'm vegetarian and allergic to sesame.",
+       "expect": {"durable": {"diet": "vegetarian", "allergen": ["sesame"]}}},
+      {"new_conversation": true, "say": "What do you recommend?",
+       "expect": {"active": {"diet": "vegetarian", "allergen": ["sesame"]}, "recommends": true}},
+      {"restart": true, "say": "Any dessert ideas?",
+       "expect": {"active": {"diet": "vegetarian", "allergen": ["sesame"]}, "recommends": true,
+                  "category": "dessert"}}]},
+
+    {"id": "req4-spice-update", "turns": [
+      {"say": "I love spicy food.", "expect": {"durable": {"spice_tolerance": "hot"}}},
+      {"say": "I don't like spicy food anymore.", "expect": {"durable": {"spice_tolerance": "none"}}}]},
+
+    {"id": "req4-allergy-removal-needs-yes", "turns": [
+      {"say": "I'm allergic to peanuts.", "expect": {"durable": {"allergen": ["peanut"]}}},
+      {"say": "I'm no longer allergic to peanuts.",
+       "expect": {"durable": {"allergen": ["peanut"]}, "active": {"allergen": ["peanut"]}, "asks": true}},
+      {"say": "Yes, please.", "expect": {"durable": {"allergen": []}, "asks": false}}]},
+
+    {"id": "req4-unclear-answer-keeps-allergy", "turns": [
+      {"say": "I'm allergic to peanuts.", "expect": {"durable": {"allergen": ["peanut"]}}},
+      {"say": "I'm not allergic to peanuts anymore.", "expect": {"asks": true}},
+      {"say": "Hmm, I'm honestly not sure.",
+       "expect": {"durable": {"allergen": ["peanut"]}, "asks": true}}]},
+
+    {"id": "req5-customers-kept-separate", "turns": [
+      {"say": "I'm allergic to shellfish.", "expect": {"durable": {"allergen": ["shellfish"]}}},
+      {"user": "other", "say": "What do you recommend?",
+       "expect": {"durable": {"allergen": []}, "active": {"allergen": []}, "recommends": true}}]},
+
+    {"id": "tonight-only", "turns": [
+      {"say": "I love spicy food.", "expect": {"durable": {"spice_tolerance": "hot"}}},
+      {"say": "Nothing spicy tonight, please.",
+       "expect": {"active": {"spice_tolerance": "none"}, "durable": {"spice_tolerance": "hot"}}},
+      {"new_conversation": true, "say": "What do you suggest?",
+       "expect": {"active": {"spice_tolerance": "hot"}}}]},
+
+    {"id": "nuts-means-both", "turns": [
+      {"say": "I'm allergic to nuts.", "expect": {"durable": {"allergen": ["peanut", "tree_nut"]}}}]},
+
+    {"id": "question-saves-nothing", "turns": [
+      {"say": "Does the pad thai have peanuts?", "expect": {"durable": {"allergen": []}}}]},
+
+    {"id": "hedged-allergy-enforced-and-asked", "turns": [
+      {"say": "I think I might be allergic to shellfish.",
+       "expect": {"active": {"allergen": ["shellfish"]}, "durable": {"allergen": []}, "asks": true}}]},
+
+    {"id": "past-diet-is-not-dropped", "turns": [
+      {"say": "I'm vegetarian.", "expect": {"durable": {"diet": "vegetarian"}}},
+      {"say": "I used to be vegetarian.", "expect": {"durable": {"diet": "vegetarian"}}}]},
+
+    {"id": "allergy-then-suggestion", "turns": [
+      {"say": "I'm allergic to soy. What main would you suggest?",
+       "expect": {"durable": {"allergen": ["soy"]}, "recommends": true, "category": "main"}}]}
+  ]
+}

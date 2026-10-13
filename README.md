@@ -25,7 +25,8 @@ the menu of a fictional restaurant, Lantern Street Kitchen.
   filter the menu; tastes and budget rank what is left.
 - **A grounded response layer presents verified menu information.** The model returns the
   dishes it recommends as IDs, separately from its message. Code accepts only IDs from the
-  eligible set and writes each dish's name, price and reasons from the menu.
+  eligible set and writes each dish's name and price from the menu, once: where the message
+  mentions it, or in a list under the message with the ranking's reasons.
 
 This is not a multi-agent system. The model is called for single, bounded tasks with fixed
 output formats; it has no tools, takes no actions, and never decides what is stored or
@@ -94,8 +95,8 @@ message
   -> recommend() (code)                     allergies and diet filter the menu; tastes rank what's left
   -> reply model (structured output)        {"message": text, "recommend": [dish IDs]}
   -> check_reply() + render() (code)        rejects ineligible or unknown IDs, typed names and
-                                            prices, then writes each recommended dish (name,
-                                            price, reasons) from the menu
+                                            prices, then writes each recommended dish once
+                                            (name, price; reasons when listed) from the menu
 ```
 
 If the extractor fails, the app stops there: nothing is saved, no pending question is
@@ -117,21 +118,38 @@ built from verified data: the changes it saved and the top eligible dishes.
 | `static/index.html` | The chat page |
 | `SPEC.md` | The memory specification: rules, invariants, test layers |
 | `test_*.py` | Tests (no model calls) |
-| `eval_extractor.py`, `extractor_cases.json`, `confirmation_cases.json` | Model evaluation |
+| `eval_extractor.py`, `extractor_cases.json`, `confirmation_cases.json` | Model evaluation: extractor and yes/no classifier |
+| `eval_conversations.py`, `conversation_cases.json` | Model evaluation: whole conversations through the app |
 | `fake_llm.py`, `preview.py` | Scripted model for tests and key-free preview |
 
 ## Tests and evaluation
 
 ```bash
 pytest                                        # 187 tests, no API calls
-python eval_extractor.py                      # extractor + reply classifier, default model
+```
+
+The tests use a scripted model. Evidence that MenuMind works with a real model comes from two
+evaluations that call it (they spend tokens; export the key first, as above):
+
+```bash
+python eval_extractor.py                      # extractor + yes/no classifier, 32 + 18 cases
+python eval_conversations.py --repeats 3      # 13 conversations through the whole app
 python eval_extractor.py --model gpt-5.4-nano --price-in <USD/Mtok> --price-out <USD/Mtok>
 ```
 
-The evaluation reports safety first, as counts: restrictions enforced and remembered, unsafe
-loosenings applied and proposed, and false "yes" readings of confirmation answers. Then it
-reports quality, latency and cost. SPEC §11 explains how the scores are computed and how to
-choose between models.
+`eval_extractor.py` reports safety first, as counts: restrictions enforced and remembered,
+unsafe loosenings applied and proposed, and false "yes" readings of confirmation answers.
+Then it reports quality, latency and cost. SPEC §11 explains how the scores are computed and
+how to choose between models.
+
+`eval_conversations.py` runs scripted conversations covering the six requirements and the
+safety rules (allergy removal needs a yes, "tonight" lasts one conversation, a question saves
+nothing, a hedged allergy is enforced and asked about). After each turn it checks what the
+app did, not the model's wording: the saved and enforced profiles, the pending question, and
+the recommended dishes, each of which is also checked against the customer's allergies and
+diet. It reports unsafe recommendations first, then correct cases and turns, extraction
+failures, fallback replies, rejected model replies and latency, and keeps every reply in the
+JSON report for reading. Run with `--repeats` to see how often the model varies.
 
 ## Deploying from GitHub
 

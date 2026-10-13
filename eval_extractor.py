@@ -288,7 +288,9 @@ def render(report: dict) -> str:
 
 
 def main() -> None:
+    from agent import menu_words
     from extractor import classify_reply_with_stats, extract
+    from menu import load_menu
     from llm import DEFAULT_MODEL, PROVIDER, make_client
 
     ap = argparse.ArgumentParser()
@@ -301,9 +303,11 @@ def main() -> None:
 
     client = make_client(PROVIDER)
 
-    def predict(utterance: str):
+    menu = load_menu()
+
+    def predict(utterance: str):  # the extraction stage as the app runs it
         x = extract(utterance, client=client, model=args.model)
-        return x.claims, x.error, x.stats
+        return menu_words(x.claims, menu), x.error, x.stats
 
     ext = evaluate_extractor(load("extractor_cases.json")["cases"], predict, args.repeats)
     conf = evaluate_confirmations(
