@@ -140,9 +140,11 @@ def render(message: str, picks: list, menu: Menu, recs: Recommendations,
         warnings = list(recs.excluded.get(item_id, []))
         if item_id in over_ids:
             warnings.append(f"over your {_price(budget)} budget")
-        mentioned.append({"id": item.id, "name": item.name, "price": item.price,
-                          "kind": kind, "warnings": warnings})
-        text = f"**{item.name}** ({_price(item.price)})"
+        first = all(m["id"] != item_id for m in mentioned)
+        if first:  # the price on the first mention only; warnings on every one
+            mentioned.append({"id": item.id, "name": item.name, "price": item.price,
+                              "kind": kind, "warnings": warnings})
+        text = f"**{item.name}** ({_price(item.price)})" if first else f"**{item.name}**"
         if item_id in recs.excluded:
             return f"{text} [not suitable for you: {', '.join(warnings)}]"
         if warnings:

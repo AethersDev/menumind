@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import statistics
 import tempfile
 import time
@@ -26,6 +27,8 @@ from menu import Menu, load_menu
 from recommend import hard_violations
 
 HERE = Path(__file__).parent
+TEMPORARY = re.compile(r"\b(this conversation|this visit|this order|this meal|tonight|today|for now)\b",
+                       re.I)
 
 
 def check(expect: dict, result, profile, menu: Menu) -> list[str]:
@@ -92,6 +95,10 @@ def summarize(rows: list[dict]) -> dict:
         "extraction_failures": sum(t["extract_error"] is not None for t in turns),
         "fallback_replies": sum(t["fallback"] for t in turns),
         "reply_rejected_at_least_once": sum(bool(t["reply_errors"]) for t in turns),
+        # heuristic, read the replies to confirm: a reply calling a saved change temporary
+        "saved_change_called_temporary": sum(
+            bool(t["changes"]) and all("(this conversation)" not in c for c in t["changes"])
+            and bool(TEMPORARY.search(t["reply"])) for t in turns),
         "latency_s": {"mean": round(statistics.fmean(lat), 2), "max": lat[-1],
                       "p95": lat[min(len(lat) - 1, int(0.95 * len(lat)))]},
         "failures": [[r["id"], r["repeat"], t["say"], f]
@@ -121,6 +128,7 @@ def main() -> None:
           f"  extraction failures             {s['extraction_failures']}\n"
           f"  fallback replies                {s['fallback_replies']}\n"
           f"  model reply rejected at least once  {s['reply_rejected_at_least_once']}\n"
+          f"  saved change called temporary   {s['saved_change_called_temporary']} (heuristic)\n"
           f"  turn latency s (mean/p95/max)   {lat['mean']}/{lat['p95']}/{lat['max']}")
     for f in s["failures"]:
         print("  failed:", " | ".join(map(str, f)))

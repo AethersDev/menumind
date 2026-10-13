@@ -65,18 +65,24 @@ ATTRIBUTES
 language ("I'm vegan", "I don't eat meat").
 - allergen (hard, set): subject is one of peanut, tree_nut, sesame, shellfish, fish, dairy, \
 egg, gluten, soy. Map specific foods: cashew/almond/walnut/pistachio -> tree_nut; \
-shrimp/crab/lobster -> shellfish; milk/cheese/cream -> dairy; wheat -> gluten. If the food is \
-ambiguous ("nuts"), emit one claim per plausible subject.
-- spice_tolerance (soft): none | mild | medium | hot. Express dislike of spice as assert \
-"none", never as negate.
+shrimp/crab/lobster -> shellfish; milk/cheese/cream -> dairy; wheat -> gluten. "Nuts" that \
+names no particular nut means both peanut and tree_nut: emit both claims, because customers \
+often count peanuts as nuts. When the customer corrects which food they react to ("not X, \
+it's Y"), Y is an allergen, never a like.
+- spice_tolerance (soft): none | mild | medium | hot. Loving or wanting spicy food is assert \
+"hot". Express dislike of spice as assert "none", never as negate. Spice is never an \
+ingredient.
 - diet_lean (soft): same values as diet. For preference language ("I'd prefer", "in the mood \
 for", "leaning toward").
 - budget_max (soft): a positive number of dollars.
 - disliked_ingredient, liked_ingredient (soft, set): subject is the ingredient, lowercase, \
-singular, spaces replaced by underscores.
+singular, spaces replaced by underscores. A customer who no longer minds a food they disliked \
+negates disliked_ingredient; that is not a like.
 
 FIELDS
-- polarity: "assert" = the value or membership holds; "negate" = it does not or no longer holds.
+- polarity: "assert" = the value or membership holds; "negate" = it does not or no longer holds. \
+With temporal past, polarity describes the past state: "I used to be vegan" is diet assert \
+vegan past.
 - subject: required for allergen, disliked_ingredient, liked_ingredient; null otherwise.
 - value: required for diet, diet_lean, spice_tolerance, budget_max (for negate, the value \
 being negated); null for set attributes.

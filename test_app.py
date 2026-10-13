@@ -265,9 +265,10 @@ def test_recommended_dishes_are_rendered_by_code(tmp_path):
                        "- **Green Curry with Tofu** ($14.00): matches your spice level (hot)\n"
                        "- **Coconut Lime Sorbet** ($6.00)")
     assert [(m["id"], m["kind"]) for m in r.mentioned] == [("M2", "rec"), ("D3", "rec")]
-    agent.client.responder = lambda b, m: says("Try [[item:M2]].", "M2", "D3")
+    agent.client.responder = lambda b, m: says("Try [[item:M2]]. [[item:M2]] is hot.", "M2", "D3")
     r = agent.turn("alice", c1, "What do you recommend?")
-    assert r.reply == "Try **Green Curry with Tofu** ($14.00).\n\n- **Coconut Lime Sorbet** ($6.00)"
+    assert r.reply == ("Try **Green Curry with Tofu** ($14.00). **Green Curry with Tofu** is hot."
+                       "\n\n- **Coconut Lime Sorbet** ($6.00)")
     assert [(m["id"], m["kind"]) for m in r.mentioned] == [("M2", "rec"), ("D3", "rec")]
 
 

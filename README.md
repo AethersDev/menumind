@@ -148,8 +148,8 @@ nothing, a hedged allergy is enforced and asked about). After each turn it check
 app did, not the model's wording: the saved and enforced profiles, the pending question, and
 the recommended dishes, each of which is also checked against the customer's allergies and
 diet. It reports unsafe recommendations first, then correct cases and turns, extraction
-failures, fallback replies, rejected model replies and latency, and keeps every reply in the
-JSON report for reading. Run with `--repeats` to see how often the model varies.
+failures, fallback replies, rejected model replies, a heuristic count of replies that call a
+saved change temporary, and latency. It keeps every reply in the JSON report for reading. Run with `--repeats` to see how often the model varies.
 
 ## Deploying from GitHub
 
