@@ -36,8 +36,8 @@
       "critical": 1
     },
     "by_status": {
-      "open": 91,
-      "fixed": 24,
+      "open": 90,
+      "fixed": 25,
       "partly fixed": 1,
       "by design": 1
     },
@@ -1746,7 +1746,7 @@
     "memory.py": {
       "1": {
         "status": "clear",
-        "note": "no stubs. expires_at is 'reserved, always None' and documented in SPEC \u00a74/\u00a79",
+        "note": "no stubs. expires_at is 'reserved, always None' and documented in SPEC §4/§9",
         "findings": [],
         "see_also": []
       },
@@ -1805,7 +1805,7 @@
       },
       "9": {
         "status": "finding",
-        "note": "a conversation-scoped proposal is asked as 'going forward'. R1 treats the unset default omnivore as a held restriction. The DB stores the text 'null' where SPEC \u00a74 says NULL. Also: SPEC \u00a72 and \u00a712.3 promise ingredient validation 'once the menu exists'; the menu exists and there is still none (doc drift, not reported)",
+        "note": "a conversation-scoped proposal is asked as 'going forward'. R1 treats the unset default omnivore as a held restriction. The DB stores the text 'null' where SPEC §4 says NULL. Also: SPEC §2 and §12.3 promise ingredient validation 'once the menu exists'; the menu exists and there is still none (doc drift, not reported)",
         "findings": [
           "MM-023",
           "MM-024",
@@ -1880,7 +1880,7 @@
       },
       "9": {
         "status": "clear",
-        "note": "SPEC \u00a711 says the P6 sweep covers 'every ... value', but it uses 3 of the 9 allergen subjects. The logic doesn't depend on the subject, so not reported",
+        "note": "SPEC §11 says the P6 sweep covers 'every ... value', but it uses 3 of the 9 allergen subjects. The logic doesn't depend on the subject, so not reported",
         "findings": [],
         "see_also": []
       },
@@ -2024,7 +2024,7 @@
       },
       "9": {
         "status": "finding",
-        "note": "SPEC \u00a72 says budget_max is 'applied as a filter by the recommender', but over-budget dishes are allowed picks. README and code agree with each other",
+        "note": "SPEC §2 says budget_max is 'applied as a filter by the recommender', but over-budget dishes are allowed picks. README and code agree with each other",
         "findings": [
           "MM-076"
         ],
@@ -2164,7 +2164,7 @@
       },
       "9": {
         "status": "clear",
-        "note": "extract docstring matches tests; SPEC \u00a711's 'retried once on API error' is met by the SDK's MODEL_RETRIES, as the docstring says",
+        "note": "extract docstring matches tests; SPEC §11's 'retried once on API error' is met by the SDK's MODEL_RETRIES, as the docstring says",
         "findings": [],
         "see_also": []
       },
@@ -2800,13 +2800,13 @@
     "eval_extractor.py": {
       "1": {
         "status": "clear",
-        "note": "no stubs; every metric in SPEC \u00a711 has an implementation",
+        "note": "no stubs; every metric in SPEC §11 has an implementation",
         "findings": [],
         "see_also": []
       },
       "2": {
         "status": "finding",
-        "note": "the metrics match SPEC \u00a711, but an invalid or SpecError output is scored as a run with zero claims, so it counts as an exact match on noop cases",
+        "note": "the metrics match SPEC §11, but an invalid or SpecError output is scored as a run with zero claims, so it counts as an exact match on noop cases",
         "findings": [],
         "see_also": [
           "MM-019"
@@ -3099,7 +3099,7 @@
     "video/spike/index.html": {
       "1": {
         "status": "clear",
-        "note": "no TODOs or stubs. I reviewed the fallbacks ('#\u2014\u2014', ev.source || 'proposed', SESSION_LABEL || '', N || ''); the 'proposed' label is finding 12.",
+        "note": "no TODOs or stubs. I reviewed the fallbacks ('#——', ev.source || 'proposed', SESSION_LABEL || '', N || ''); the 'proposed' label is finding 12.",
         "findings": [],
         "see_also": []
       },
@@ -3145,7 +3145,7 @@
       },
       "6": {
         "status": "finding",
-        "note": "two pairs of overlapping tweens make seek() depend on seek history: the camera (world/bokeh, 132.024\u2013133.424 s) in finding 1, and the three walled cards (81.304\u201381.804 s) in finding 2. Everything else is independent of seek order. I compared frame() at 655 times in sequential vs shuffled order, and an inline-style DOM hash at 124 times forward vs reverse; only those two windows differed. The grain is keyed to tl.time(). All 11 font faces were 'loaded' at ready, and build-time measurements match live sizes (ticket H 290/408, receipt 685, slip lefts 90/455).",
+        "note": "two pairs of overlapping tweens make seek() depend on seek history: the camera (world/bokeh, 132.024–133.424 s) in finding 1, and the three walled cards (81.304–81.804 s) in finding 2. Everything else is independent of seek order. I compared frame() at 655 times in sequential vs shuffled order, and an inline-style DOM hash at 124 times forward vs reverse; only those two windows differed. The grain is keyed to tl.time(). All 11 font faces were 'loaded' at ready, and build-time measurements match live sizes (ticket H 290/408, receipt 685, slip lefts 90/455).",
         "findings": [
           "MM-008",
           "MM-010"
@@ -3842,7 +3842,7 @@
       "category_name": "Simplified or heuristic logic",
       "severity": "high",
       "title": "A companion's conversation-scoped allergy or diet is dropped when the customer removes or loosens their own restriction on the same key",
-      "evidence": "fold: 'if e.scope is Scope.DURABLE: ... active_explicit[e.key] = e' \u2014 a later durable event replaces this session's conversation SET on the same (attribute, subject) key. If the customer's allergy already covers the companion's, decide returns R7 and records nothing. SPEC \u00a73 models 'restrictions of a companion who is eating now' as conversation overlays on the same key, so a confirmed removal of the customer's own peanut allergy also stops enforcing the companion's for the rest of the meal. The question never mentions this. For diet, R11 drops a companion's vegan overlay without asking anything. Not documented in README Limitations or SPEC.",
+      "evidence": "fold: 'if e.scope is Scope.DURABLE: ... active_explicit[e.key] = e' — a later durable event replaces this session's conversation SET on the same (attribute, subject) key. If the customer's allergy already covers the companion's, decide returns R7 and records nothing. SPEC §3 models 'restrictions of a companion who is eating now' as conversation overlays on the same key, so a confirmed removal of the customer's own peanut allergy also stops enforcing the companion's for the rest of the meal. The question never mentions this. For diet, R11 drops a companion's vegan overlay without asking anything. Not documented in README Limitations or SPEC.",
       "reproduction": ".venv/bin/python -c snippet with Conversation(EventStore(':memory:')): own peanut plus companion peanut (temporal=conversation) in either order, then negate peanut, answer yes. Output: 'companion first [R8 apply, R8 apply] ... after yes: active allergen = set()' and 'customer first [R8 apply, R7 noop] ... after yes: active allergen = set()'. Diet: durable vegetarian plus companion vegan tonight, then 'I eat fish now' gives 'R11 apply -> active diet: pescatarian'",
       "verdict": "confirmed",
       "verification": "Re-run by the lead: own peanut R8, companion's peanut R7 no-op, removal R10; after 'yes' the active allergens are set().",
@@ -3965,7 +3965,7 @@
       "severity": "high",
       "title": "Walled cards (S4, M5, M6) jump from 39% to 97% opacity in one frame at 81.333 s",
       "evidence": "Line 706: tl.to(all cards, { opacity: (i, e) => 1, duration: .6 }, t + .4). Line 709: if (s.ex) tl.to(cards[id].el, { opacity: .66, duration: .6 }, t + .5). The two tweens overlap for 0.5 s. tl.progress(1) initialised the .66 tween from the first tween's end value (1), so forward playback jumps to about 1 and then eases down to .66. The cards are on screen (the camera is panning to the menu), and the world plate composites them.",
-      "reproduction": "Sequential 30 fps seek: 81.300 S4=0.393 M5=0.393 M6=0.393; 81.333 S4=0.968 M5=0.968 M6=0.968 (non-walled M3=0.471, smooth); 81.367 0.933 \u2026 81.9 0.660. pw2 also shows the value at 81.554 depends on seek history. The original has the same code at lines 678/681.",
+      "reproduction": "Sequential 30 fps seek: 81.300 S4=0.393 M5=0.393 M6=0.393; 81.333 S4=0.968 M5=0.968 M6=0.968 (non-walled M3=0.471, smooth); 81.367 0.933 … 81.9 0.660. pw2 also shows the value at 81.554 depends on seek history. The original has the same code at lines 678/681.",
       "verdict": "confirmed",
       "verification": "Lead control: the pre-fix page steps a card's opacity by 0.574 in one frame; the fixed page's largest step is 0.088.",
       "fix": "Compute S4 before line 706. Use one tween: opacity: (i) => S4[ids[i]]?.ex ? .66 : 1 at t + .4, and delete line 709. Neither line emits a cue.",
@@ -3987,7 +3987,7 @@
       "reproduction": "pw3.py, render mode at 104.5 s: {'text': 'R7 noopno change to the hard restriction', 'display': 'none', 'fontSize': '14px', 'opacity': '1', 'visibility': 'visible', 'w': 0}. Player mode: {'display': 'block', 'fontSize': '14px', 'w': 388}. Original in render mode: display 'none'.",
       "verdict": "confirmed",
       "verification": "Code read by the lead: '.render .note { display: none !important }' (index.html:230); after the fix the slip reaches opacity 1 in render mode.",
-      "fix": "Rename the modifier class, e.g. el('div', 'slip decision', \u2026), with matching '.slip.decision' and '.slip.decision small' rules.",
+      "fix": "Rename the modifier class, e.g. el('div', 'slip decision', …), with matching '.slip.decision' and '.slip.decision small' rules.",
       "status": "fixed",
       "sources": [
         "A5 #3"
@@ -4002,8 +4002,8 @@
       "category_name": "Determinism",
       "severity": "high",
       "title": "Camera snaps back to the threads view during 'Order up.' and hard-cuts at the receipt (overlapping camera tweens)",
-      "evidence": "cam(t + 1.5, 1318, 470, .775, 8, \"none\") runs 125.524\u2013133.524 s, but there are only 2 tokens \u00d7 3.2 s of threads, so cam(t, 600, 470, 1.0, 1.4) at line 881 starts at 132.024 s while the 8 s drift is still running. Both tween world (and bokeh) x/y/scale. GSAP renders children in start order going forward and in reverse going backward, so seek() depends on history. In forward playback the drift re-renders after the 'Order up' tween completes and holds the camera at the drift's end. The receipt camera was initialised from (360,70,1), so it hard-cuts back.",
-      "reproduction": "Overlap finder (gsap.globalTimeline children): {'name': '#world', 'props': ['x','y','scale'], 'a': [125.524, 133.524], 'b': [132.024, 133.424]}. frame(132.724) after seek(0): cam [149.275, 122.875, 0.8875]; after seek(152): [-59.673, 176.22, 0.774]. The running render's own export, video/clips/spike3d/film.json: frame 4003 (133.433 s) [360, 70, 1] \u2192 frame 4004 (133.467 s) [-61.32, 175.78, 0.77], held to frame 4086, then frame 4087 (136.233 s) [360.0, 70.0, 1]. Same code in the original copy (lines 799/838/841).",
+      "evidence": "cam(t + 1.5, 1318, 470, .775, 8, \"none\") runs 125.524–133.524 s, but there are only 2 tokens × 3.2 s of threads, so cam(t, 600, 470, 1.0, 1.4) at line 881 starts at 132.024 s while the 8 s drift is still running. Both tween world (and bokeh) x/y/scale. GSAP renders children in start order going forward and in reverse going backward, so seek() depends on history. In forward playback the drift re-renders after the 'Order up' tween completes and holds the camera at the drift's end. The receipt camera was initialised from (360,70,1), so it hard-cuts back.",
+      "reproduction": "Overlap finder (gsap.globalTimeline children): {'name': '#world', 'props': ['x','y','scale'], 'a': [125.524, 133.524], 'b': [132.024, 133.424]}. frame(132.724) after seek(0): cam [149.275, 122.875, 0.8875]; after seek(152): [-59.673, 176.22, 0.774]. The running render's own export, video/clips/spike3d/film.json: frame 4003 (133.433 s) [360, 70, 1] → frame 4004 (133.467 s) [-61.32, 175.78, 0.77], held to frame 4086, then frame 4087 (136.233 s) [360.0, 70.0, 1]. Same code in the original copy (lines 799/838/841).",
       "verdict": "confirmed",
       "verification": "Lead control: the pre-fix page has one-frame camera snaps of 421 px at 133.467 s and 136.233 s; the fixed page has none.",
       "fix": "End the drift where the next move starts: tween world and bokeh for toks.length*3.2 + .1 s (6.5 s, ending at t+8.0) and emit cue(t + 1.5, 'air', {dur: 8}) unchanged, so the cue list stays byte-identical.",
@@ -4059,7 +4059,7 @@
       "category_name": "Silent failure",
       "severity": "high",
       "title": "The acceptance card shows six invented PASS rows when the build gets no --acceptance output (as in the current data.js), badges every real line PASS (FAIL lines included), and prints 'link added at publishing' without --repo",
-      "evidence": "With no --acceptance, the card renders hard-coded lines ('an allergy is saved, every recommendation avoids it', ..., 'a server restart keeps it') as `<b>PASS</b>` under 'acceptance.py \u00b7 over HTTP'. With real output, every line is still prefixed PASS (`<b>PASS</b>&nbsp; ${l.replace(/^PASS\\s+/, '')}`), so 'FAIL  x', 'got: ...' and '9/10 checks passed' would all show as PASS. build.py does not reject failing acceptance output. The current walkthrough/data.js has acceptance == ''. S17 says 'an acceptance test over HTTP across a restart', and no recorded acceptance run exists in the repo.",
+      "evidence": "With no --acceptance, the card renders hard-coded lines ('an allergy is saved, every recommendation avoids it', ..., 'a server restart keeps it') as `<b>PASS</b>` under 'acceptance.py · over HTTP'. With real output, every line is still prefixed PASS (`<b>PASS</b>&nbsp; ${l.replace(/^PASS\\s+/, '')}`), so 'FAIL  x', 'got: ...' and '9/10 checks passed' would all show as PASS. build.py does not reject failing acceptance output. The current walkthrough/data.js has acceptance == ''. S17 says 'an acceptance test over HTTP across a restart', and no recorded acceptance run exists in the repo.",
       "reproduction": "data.js parsed: `repr(d.get('acceptance')) -> ''`; acceptance.py:41 prints 'PASS  ' or 'FAIL  '",
       "verdict": "confirmed",
       "verification": "Code read by the lead: index.html:586-593 falls back to six literal rows and badges every line PASS; data.js has acceptance ''.",
@@ -4233,7 +4233,7 @@
       "reproduction": "parse_claims with budget_max negate value=None plus an allergen claim gives 'SpecError: budget_max needs a value' (the whole message is rejected). Held 15, negate value=20 gives 'R5 noop negated value is not currently held -> budget still 15'",
       "verdict": "plausible",
       "verification": "Auditor's reproduction (see 'reproduction').",
-      "fix": "Allow value=None on a negation of a soft scalar and treat it as 'clear whatever is held' (REMOVE at claim scope). Keep the value requirement for diet (\u00a75.2).",
+      "fix": "Allow value=None on a negation of a soft scalar and treat it as 'clear whatever is held' (REMOVE at claim scope). Keep the value requirement for diet (§5.2).",
       "status": "open",
       "sources": [
         "A1 #5"
@@ -4267,7 +4267,7 @@
       "category_name": "API contracts",
       "severity": "medium",
       "title": "A durable proposal whose only effect is on the active overlay is always rejected as stale when the customer says yes",
-      "evidence": "decide judges a durable claim against both views ('views = ... (durable, active)', \u00a75.1), but resolve judges it against one: 'target = now.durable if d.scope is Scope.DURABLE else now.active; if _hard_effect(...) == \"none\": raise StaleConfirmation'. With a tonight-only sesame overlay, 'I'm not allergic to sesame' gets R10 with a DURABLE REMOVE. Durable has no sesame, so every yes raises. The customer is asked a question no answer can satisfy, and then told 'The earlier question no longer applies'.",
+      "evidence": "decide judges a durable claim against both views ('views = ... (durable, active)', §5.1), but resolve judges it against one: 'target = now.durable if d.scope is Scope.DURABLE else now.active; if _hard_effect(...) == \"none\": raise StaleConfirmation'. With a tonight-only sesame overlay, 'I'm not allergic to sesame' gets R10 with a DURABLE REMOVE. Durable has no sesame, so every yes raises. The customer is asked a question no answer can satisfy, and then told 'The earlier question no longer applies'.",
       "reproduction": "snippet: conv SET sesame, then negate sesame (current), then answer(yes). Output: 'R10 confirm Scope.DURABLE \"Should I stop treating sesame as an allergy? ...\"' / 'StaleConfirmation: the proposed change no longer changes anything' / 'active allergen after yes: {sesame}'. Diet: overlay vegan plus hedged omnivore gives 'Should I save omnivore as your diet going forward?', then StaleConfirmation, and active stays vegan",
       "verdict": "confirmed",
       "verification": "Auditor's reproduction (see 'reproduction').",
@@ -4378,7 +4378,7 @@
       "severity": "medium",
       "title": "No test runs the chat page's JavaScript; the confirmed UI defects (stale reply, hidden errors, failed sign-out) are untested",
       "evidence": "test_page_and_menu_are_served only asserts that the page text contains 'Lantern Street Kitchen' and 'MenuMind'. No test drives index.html. Untested: escaping of model and server text, 404 recovery, chat-off from /api/health, the in-flight race. The /api/chat fields the page reads (changes, trace.claims[].polarity etc., question) are not contract-checked over HTTP either.",
-      "reproduction": "grep for playwright/index.html in test_*.py: no match (only video/*.py and server.py). The F1\u2013F6 repros above all pass the current suite (121 passed).",
+      "reproduction": "grep for playwright/index.html in test_*.py: no match (only video/*.py and server.py). The F1–F6 repros above all pass the current suite (121 passed).",
       "verdict": "confirmed",
       "verification": "Auditor's reproduction (see 'reproduction').",
       "fix": "Add one Playwright smoke test against create_app(client=FakeLLM) that covers escaping, the stale-reply guard and 404 recovery, plus an HTTP test asserting the /api/chat response keys the page reads.",
@@ -4456,7 +4456,7 @@
       "severity": "medium",
       "title": "The original's inline TRACE is stale and partly not producible by MenuMind, but is labelled 'recorded output'",
       "evidence": "sessions 'tue-7f3a9c21'/'fri-2b81e0d4': Agent.start_conversation issues uuid4, and the tickets print 'Friday fri-2b81'. Drafts use the retired '[[rec:M3]]' format, which current check_reply rejects. M3 allergens include gluten (menu.json no longer does). tests is '136 passed' (196 now). Replies lack the app's 'Every visit:' changes line, and turn 0 has a reply with no recorded draft.",
-      "reproduction": "A diff script against trace.js printed: sessions ORIG {'visit1': 'tue-7f3a9c21', 'visit2': 'fri-2b81e0d4'}; turn 5 drafts ORIG ['Try the lobster roll, only $30. Or [[rec:S4]], it's a favorite.', \u2026]; menu M3 allergens NEW ['sesame','soy'] ORIG ['gluten','sesame','soy']; tests '196 passed in 1.63s' vs '136 passed in 1.99s'. A screenshot of the original at 104.5 s shows 'Friday fri-2b81' on the hold ticket.",
+      "reproduction": "A diff script against trace.js printed: sessions ORIG {'visit1': 'tue-7f3a9c21', 'visit2': 'fri-2b81e0d4'}; turn 5 drafts ORIG ['Try the lobster roll, only $30. Or [[rec:S4]], it's a favorite.', …]; menu M3 allergens NEW ['sesame','soy'] ORIG ['gluten','sesame','soy']; tests '196 passed in 1.63s' vs '136 passed in 1.99s'. A screenshot of the original at 104.5 s shows 'Friday fri-2b81' on the hold ticket.",
       "verdict": "confirmed",
       "verification": "Auditor's reproduction (see 'reproduction').",
       "fix": "Keep the original as an archive only: mark it as such, or load trace.js instead of the inline TRACE. Whether the session IDs were hand-edited is plausible but not proven.",
@@ -4490,9 +4490,9 @@
       "category": 3,
       "category_name": "Silent failure",
       "severity": "medium",
-      "title": "the Whisper read-back gate passes one-word misreads (it passed 'Saut\u00e9' for 'satay') and never checks numbers",
+      "title": "the Whisper read-back gate passes one-word misreads (it passed 'Sauté' for 'satay') and never checks numbers",
       "evidence": "'misread = [... if r < 0.9]'. _words() (line 78-81) drops NUMBER_WORDS and every digit (regex [a-z]+), so numbers are never compared, although the heard() docstring says they are. With SequenceMatcher, one substituted word in an n-word section scores (n-1)/n, which is >= 0.9 for n >= 10, and the shortest sections have 14 words. Docstring line 9: 'a misread line stops the build'.",
-      "reproduction": "_words('a hundred and ninety-six tests') == _words('a hundred and ninety-five tests') == ['a','and','tests'], ratio 1.0. The cached transcript vo/S05-3f940f88_n.heard.txt reads 'Saut\u00e9 and pad thai are never suggested.' and scores 0.955, so it passes; the gate did not catch the misread that SAY now patches. Also passing: S06 'pad tie' (0.929), S18 'rule of mind' (0.967), and S17 with 'Validation:' dropped (0.965).",
+      "reproduction": "_words('a hundred and ninety-six tests') == _words('a hundred and ninety-five tests') == ['a','and','tests'], ratio 1.0. The cached transcript vo/S05-3f940f88_n.heard.txt reads 'Sauté and pad thai are never suggested.' and scores 0.955, so it passes; the gate did not catch the misread that SAY now patches. Also passing: S06 'pad tie' (0.929), S18 'rule of mind' (0.967), and S17 with 'Validation:' dropped (0.965).",
       "verdict": "confirmed",
       "verification": "Auditor's reproduction (see 'reproduction').",
       "fix": "Fail on any word-level replace/insert/delete opcode that is not in a small per-word allow-list of known Whisper spellings. Map digits in the transcript to words (or compare against the script's numbers) instead of discarding numbers on both sides.",
@@ -4546,7 +4546,7 @@
       "severity": "medium",
       "title": "No test covers the film's cue list, seek determinism or trace freshness",
       "evidence": "No test_*.py references spike, __film or trace.js. The score depends on exactly these 99 cue times, and findings 1 and 2 are seek-order bugs that a forward-vs-reverse seek check catches immediately.",
-      "reproduction": "grep -ln 'spike\\|__film' test_*.py \u2192 'no test references the film or spike_trace'. My probes: 99 cues, 0 differences vs the original; seek-order mismatches only at 81.3\u201381.9 s and 132.0\u2013133.5 s.",
+      "reproduction": "grep -ln 'spike\\|__film' test_*.py → 'no test references the film or spike_trace'. My probes: 99 cues, 0 differences vs the original; seek-order mismatches only at 81.3–81.9 s and 132.0–133.5 s.",
       "verdict": "confirmed",
       "verification": "Auditor's reproduction (see 'reproduction').",
       "fix": "One Playwright pytest: cues equal a golden list; frame(t) after seek(0) equals frame(t) after seek(duration) on a 1/30 s grid; plus an in-memory rerun of spike_trace's scenario compared with trace.js (ignoring uuids and timestamps).",
@@ -4583,8 +4583,8 @@
       "category_name": "Simplified or heuristic logic",
       "severity": "medium",
       "title": "The REFUSED late 'yes' is staged through a memory call that the app's chat never makes",
-      "evidence": "conv.answer(stale, True) is called directly on the memory layer. The film (index.html 779\u2013791) shows the customer's 'yes' stamped REFUSED with 'StaleConfirmation: that question is no longer pending'. agent.turn calls conv.answer only for the currently pending proposal (agent.py 257\u2013275), and server.py has no answer endpoint. In the app, a late 'yes' is just a new message.",
-      "reproduction": "replay_trace.py: 'LATE YES via Agent.turn: trace keys [claims, decisions, extract_error, fallback, rejected, reply_errors] | confirmation: None | reply: 'Here are a couple of ideas.\\n\\n- **Spicy Chicken Bowl** ($12.00)\u2026' | events 4 -> 4 | classify calls: 0'. By contrast: 'direct conv.answer(stale) -> StaleConfirmation that question is no longer pending'.",
+      "evidence": "conv.answer(stale, True) is called directly on the memory layer. The film (index.html 779–791) shows the customer's 'yes' stamped REFUSED with 'StaleConfirmation: that question is no longer pending'. agent.turn calls conv.answer only for the currently pending proposal (agent.py 257–275), and server.py has no answer endpoint. In the app, a late 'yes' is just a new message.",
+      "reproduction": "replay_trace.py: 'LATE YES via Agent.turn: trace keys [claims, decisions, extract_error, fallback, rejected, reply_errors] | confirmation: None | reply: 'Here are a couple of ideas.\\n\\n- **Spicy Chicken Bowl** ($12.00)…' | events 4 -> 4 | classify calls: 0'. By contrast: 'direct conv.answer(stale) -> StaleConfirmation that question is no longer pending'.",
       "verdict": "confirmed",
       "verification": "Auditor's reproduction (see 'reproduction').",
       "fix": "Record agent.turn(USER, cid, 'yes') and show its real outcome (no question pending, nothing changed), or caption the beat as a direct memory-API check. Changing the text alone leaves cue times unchanged.",
@@ -4698,7 +4698,7 @@
       "category_name": "Simplified or heuristic logic",
       "severity": "medium",
       "title": "Receipt rows presented as recorded are literals or tautologies",
-      "evidence": "[\"Visits\", 2], [\"Questions held\", 1], [\"Questions voided\", 1], [\"Late answers refused\", 1] and [\"Invented dishes served\", 0] are hard-coded. [\"Prices from the menu\", `${last.mentioned.length} of ${last.mentioned.length}`] is N of N by construction. The VOID stamp and tear (755\u2013777) are unconditional and never read W[4].pending_cleared. `N = (\u2026 || [])[1] || \"\"` leaves 'Tests passing' blank silently. The inspector shows all of these as 'Receipt figures'.",
+      "evidence": "[\"Visits\", 2], [\"Questions held\", 1], [\"Questions voided\", 1], [\"Late answers refused\", 1] and [\"Invented dishes served\", 0] are hard-coded. [\"Prices from the menu\", `${last.mentioned.length} of ${last.mentioned.length}`] is N of N by construction. The VOID stamp and tear (755–777) are unconditional and never read W[4].pending_cleared. `N = (… || [])[1] || \"\"` leaves 'Tests passing' blank silently. The inspector shows all of these as 'Receipt figures'.",
       "reproduction": "reasoning: the literals currently match trace.js (1 turn with pending, 1 with pending_cleared, late_yes present; mentioned prices 12.0/14.0 equal menu M3/M2), but no code ties them to the data. Any change to the script or the app leaves them unchanged.",
       "verdict": "confirmed",
       "verification": "Auditor's reproduction (see 'reproduction').",
@@ -4718,7 +4718,7 @@
       "severity": "medium",
       "title": "'Invented dishes served 0' and the poster's 'never makes up a dish' are not backed by any check",
       "evidence": "check_reply rejects only typed prices, typed full dish names and invalid IDs; recommend.py's docstring says it cannot catch a dish described in other words. Draft 1's invented 'lobster roll' was not flagged: it was sent back only for the price and the peanut dish. Poster line 253: 'never makes up a dish'.",
-      "reproduction": ".venv/bin/python -c check_reply(...): draft 1 as recorded \u2192 ['recommended S4, which the customer must avoid (contains peanut)', 'typed a price; prices must come from tokens']; 'Try the lobster roll, it's a favorite.' with [] \u2192 [].",
+      "reproduction": ".venv/bin/python -c check_reply(...): draft 1 as recorded → ['recommended S4, which the customer must avoid (contains peanut)', 'typed a price; prices must come from tokens']; 'Try the lobster roll, it's a favorite.' with [] → [].",
       "verdict": "confirmed",
       "verification": "Auditor's reproduction (see 'reproduction').",
       "fix": "Replace the row with what the code guarantees, e.g. 'Dishes served from the menu: 2 of 2' computed from mentioned. Reword the poster to 'never invents a dish's name or price'.",
@@ -5027,7 +5027,7 @@
       "category_name": "Silent failure",
       "severity": "low",
       "title": "budget_max validation accepts NaN and inf at the memory boundary",
-      "evidence": "'value <= 0' is False for NaN, and inf passes too. SPEC \u00a72 requires 'positive number'. json.dumps writes the non-standard 'NaN'/'Infinity'. Only extractor.parse_claims guards against this, so other writers to EventStore are not protected.",
+      "evidence": "'value <= 0' is False for NaN, and inf passes too. SPEC §2 requires 'positive number'. json.dumps writes the non-standard 'NaN'/'Infinity'. Only extractor.parse_claims guards against this, so other writers to EventStore are not protected.",
       "reproduction": "decide(budget_max nan / inf) gives R6, append stores it, the value column is [('NaN',0),('Infinity',0)], and the folded budget is inf",
       "verdict": "confirmed",
       "verification": "Auditor's reproduction (see 'reproduction').",
@@ -5121,8 +5121,8 @@
       "category": 9,
       "category_name": "API contracts",
       "severity": "low",
-      "title": "The event log stores the JSON text 'null' where SPEC \u00a74 says SQL NULL",
-      "evidence": "'json.dumps(e.value)' is applied to every row. SPEC \u00a74: 'value NULL for set members and for REMOVE'.",
+      "title": "The event log stores the JSON text 'null' where SPEC §4 says SQL NULL",
+      "evidence": "'json.dumps(e.value)' is applied to every row. SPEC §4: 'value NULL for set members and for REMOVE'.",
       "reproduction": "select value, value is null, typeof(value) for an allergen SET gives [('null', 0, 'text')]",
       "verdict": "confirmed",
       "verification": "Auditor's reproduction (see 'reproduction').",
@@ -5248,12 +5248,12 @@
       "category": 9,
       "category_name": "API contracts",
       "severity": "low",
-      "title": "SPEC \u00a72 says the budget filters; the code allows over-budget picks with a warning",
-      "evidence": "SPEC \u00a72: 'budget_max is applied as a filter by the recommender'. recommend puts over-budget dishes in over_budget, and allowed_ids() includes them. README ('budget rank what is left') and REPLY_SYSTEM agree with the code.",
+      "title": "SPEC §2 says the budget filters; the code allows over-budget picks with a warning",
+      "evidence": "SPEC §2: 'budget_max is applied as a filter by the recommender'. recommend puts over-budget dishes in over_budget, and allowed_ids() includes them. README ('budget rank what is left') and REPLY_SYSTEM agree with the code.",
       "reproduction": "reasoning: allowed_ids returns candidates + over_budget (line 40); render labels them '[over your $X budget]'",
       "verdict": "confirmed",
       "verification": "Auditor's reproduction (see 'reproduction').",
-      "fix": "Correct SPEC \u00a72 (it is chmod 444, so the owner has to make this edit).",
+      "fix": "Correct SPEC §2 (it is chmod 444, so the owner has to make this edit).",
       "status": "open",
       "sources": [
         "A1 #20"
@@ -5555,7 +5555,7 @@
       "category_name": "Test gaps",
       "severity": "low",
       "title": "Some rule outcomes run only inside the P6 sweep, which asserts only that nothing loosens",
-      "evidence": "SPEC \u00a711 claims unit coverage of 'decide rules R1\u2013R11'. R4 (an aspiration on an allergen, or an aspiration negating a diet) never has its outcome asserted, nor does the R9 'hedged restatement' apply-only branch (memory.py:346-347). A regression from R4 to R8, or from R9 apply to apply+confirm, would pass.",
+      "evidence": "SPEC §11 claims unit coverage of 'decide rules R1–R11'. R4 (an aspiration on an allergen, or an aspiration negating a diet) never has its outcome asserted, nor does the R9 'hedged restatement' apply-only branch (memory.py:346-347). A regression from R4 to R8, or from R9 apply to apply+confirm, would pass.",
       "reproduction": "rulecov plugin over test_memory.py excluding the sweep gives a rule set without R4 and without ('R9','apply'). Case labels give the same",
       "verdict": "confirmed",
       "verification": "Auditor's reproduction (see 'reproduction').",
@@ -5628,8 +5628,8 @@
       "category_name": "Dead code",
       "severity": "low",
       "title": "Dead code",
-      "evidence": "let moved = 0 \u2026 moved++ is never read (394/401). t[k] === \" \" ? \" \" : esc(t[k]) has identical branches (an ASCII space, per od). --steel (line 19) is never used. x: 0 in the r7 tween (753) animates 0\u21920. opacity: (i, e) => 1 (706) is a constant function. The original has the same code.",
-      "reproduction": "grep -c 'var(--steel)' \u2192 0; od -c of line 424 shows '\" \" ? \" \"'.",
+      "evidence": "let moved = 0 … moved++ is never read (394/401). t[k] === \" \" ? \" \" : esc(t[k]) has identical branches (an ASCII space, per od). --steel (line 19) is never used. x: 0 in the r7 tween (753) animates 0→0. opacity: (i, e) => 1 (706) is a constant function. The original has the same code.",
+      "reproduction": "grep -c 'var(--steel)' → 0; od -c of line 424 shows '\" \" ? \" \"'.",
       "verdict": "confirmed",
       "verification": "Auditor's reproduction (see 'reproduction').",
       "fix": "Delete them; the card-pop fix reuses line 706's function form.",
@@ -5646,7 +5646,7 @@
       "category_name": "Silent failure",
       "severity": "low",
       "title": "decisionFor pairs events with decisions by index and silently falls back to decisions[0]",
-      "evidence": "return turn.decisions[i] || turn.decisions[0]; \u2014 a decision that writes no event (R7, R10, R2) shifts the pairing and puts the wrong rule on a ticket. Latent: correct for this trace.",
+      "evidence": "return turn.decisions[i] || turn.decisions[0]; — a decision that writes no event (R7, R10, R2) shifts the pairing and puts the wrong rule on a ticket. Latent: correct for this trace.",
       "reproduction": "Real Conversation.handle on [allergen+peanut (already held), spice=hot]: decisions [('R7','noop'), ('R6','apply')], new_events [('spice_tolerance','hot')], so decisionFor prints 'R7 no change to the hard restriction' on the spice ticket.",
       "verdict": "confirmed",
       "verification": "Auditor's reproduction (see 'reproduction').",
@@ -5683,7 +5683,7 @@
       "severity": "low",
       "title": "Held ticket prints 'durable, proposed' where real tickets print the recorded source",
       "evidence": "holdEv sets source: 'proposed', which ticket() renders as `${scope}, ${source}`. decide() gives the proposal Source.STATED (memory.py 291), and spike_trace omits source from pending.draft.",
-      "reproduction": "reasoning plus code (memory.py 290\u2013292; spike_trace.py 123\u2013125).",
+      "reproduction": "reasoning plus code (memory.py 290–292; spike_trace.py 123–125).",
       "verdict": "confirmed",
       "verification": "Auditor's reproduction (see 'reproduction').",
       "fix": "Export p.draft.source in spike_trace and print it, or label the line 'held, not saved'.",
@@ -5701,7 +5701,7 @@
       "severity": "low",
       "title": "texture() permanently hides the page, so any later frame() on that page reports every paper at opacity 0",
       "evidence": "$(\".page\").style.visibility = \"hidden\" (never restored); alpha() returns 0 for computed visibility hidden. Latent: spike_render.py uses separate pages.",
-      "reproduction": "pw4.py frame(30) before: ['t1:1/0.92','t2:1/0.92',\u2026]; after texture('t1',[true,false]): ['t1:0/0','t2:0/0',\u2026].",
+      "reproduction": "pw4.py frame(30) before: ['t1:1/0.92','t2:1/0.92',…]; after texture('t1',[true,false]): ['t1:0/0','t2:0/0',…].",
       "verdict": "confirmed",
       "verification": "Auditor's reproduction (see 'reproduction').",
       "fix": "Restore .page visibility and the backgrounds at the start of frame() and seek(), or document that texture() pages are single-use.",
@@ -5719,7 +5719,7 @@
       "severity": "low",
       "title": "Swallowed audio errors and an unhandled build promise",
       "evidence": "try { audio.currentTime = tl.time(); } catch {} and audio.play().catch(() => {}): a missing or blocked score plays silently while the button says 'Sound on'. main(); at line 1042 is a floating promise: if build() throws, the poster buttons are never bound and spike_render.py only sees a 60 s selector timeout.",
-      "reproduction": "reasoning: the code paths are visible in lines 1000\u20131001 and 1042; no runtime failure was induced.",
+      "reproduction": "reasoning: the code paths are visible in lines 1000–1001 and 1042; no runtime failure was induced.",
       "verdict": "plausible",
       "verification": "Auditor's reproduction (see 'reproduction').",
       "fix": "main().catch(e => { document.body.dataset.error = e.message; throw e; }); on play() rejection set the sound label to 'Sound unavailable'; drop the empty catch.",
@@ -5773,7 +5773,7 @@
       "severity": "low",
       "title": "The late-yes guard passes vacuously if no question was held; the temp DB directory leaks",
       "evidence": "stale starts as None. If the script ever holds no question, conv.answer(None, True) raises 'that question is no longer pending' and is recorded as a refused late yes. db = Path(tempfile.mkdtemp()) / 'spike.db' (line 93) is never removed.",
-      "reproduction": "reasoning: memory.py 579\u2013581 raises StaleConfirmation whenever pending is None, whatever the id.",
+      "reproduction": "reasoning: memory.py 579–581 raises StaleConfirmation whenever pending is None, whatever the id.",
       "verdict": "confirmed",
       "verification": "Auditor's reproduction (see 'reproduction').",
       "fix": "sys.exit if stale is None before line 132; use tempfile.TemporaryDirectory().",
@@ -5826,7 +5826,7 @@
       "category_name": "Magic numbers",
       "severity": "low",
       "title": "facts and positions are hard-coded instead of read from data",
-      "evidence": "The 'peanut \u00b7 still enforced' chip is placed at '120 + 2 * 238', assuming the peanut event is at index 2 (it is today). Line 515 hard-codes picks ['M9','D3']. Lines 601-623 hard-code 14\u00d73, 42/42, 75 turns, 10/10 and the run bars. 'gpt-5.4-mini' appears in 4 places. These match README:191-196 today, but nothing ties them together.",
+      "evidence": "The 'peanut · still enforced' chip is placed at '120 + 2 * 238', assuming the peanut event is at index 2 (it is today). Line 515 hard-codes picks ['M9','D3']. Lines 601-623 hard-code 14×3, 42/42, 75 turns, 10/10 and the run bars. 'gpt-5.4-mini' appears in 4 places. These match README:191-196 today, but nothing ties them together.",
       "reproduction": "reasoning: events[2] is SET allergen peanut in data.js; the README numbers match.",
       "verdict": "confirmed",
       "verification": "Auditor's reproduction (see 'reproduction').",
@@ -6006,7 +6006,7 @@
       "falsification": "Read the memory lock, recommend(), _reply()/check_reply(), render(), and HTTP chat caller. The lock serializes memory changes but is released before the model call. The later lock only updates history; no current profile or event sequence is checked before returning. The normal UI busy flag only covers one page; two conversations/tabs can issue this interleaving. This is a single-process failure, not the documented multi-process limitation.",
       "fix": "Bind the response to an event-log version. Recheck the version and current profile after the model returns, revalidate or discard stale picks and regenerate any stale prose/profile, and make the validation/publication decision atomic relative to memory writes. Add a controlled two-conversation regression test.",
       "effort": "M",
-      "status": "open",
+      "status": "fixed",
       "sources": [
         "Independent post-fix verification in this chat"
       ],
@@ -6022,7 +6022,8 @@
           "quote": "**One server process.** Memory updates are serialized by a lock inside the process, so"
         }
       ],
-      "source_sha256": "ad1b6288cc5325f83ebe95ebe6dc471764b00b51020bfc42e6c4cdb82ea64450"
+      "source_sha256": "ad1b6288cc5325f83ebe95ebe6dc471764b00b51020bfc42e6c4cdb82ea64450",
+      "fix_applied": "agent.py: after the reply model returns, the turn re-reads the profile under the same lock as memory writes; if what is enforced changed, the model's picks are re-checked against the current recommendations (check_reply) and, if they fail, the reply is built from verified current data (fallback_reply); the reply, its dishes and the returned profile all answer to that state. Regression test test_a_reply_honours_an_allergy_saved_while_it_was_written (the two-conversation interleaving above) fails on the previous agent.py and passes now; the in-memory repro returns peanut-free dishes, fallback true. 197 passed. The Spike's recorded test count and the walkthrough's narration were updated to 197."
     }
   ],
   "independent_verifications": [
@@ -6060,6 +6061,24 @@
         "ruff_F_B": "8 diagnostics: 3 B008, 4 B905, 1 B023. No F diagnostics. B008 are FastAPI dependencies; the four zips have matching construction or a length assertion; Pillow point evaluates the keep lambda synchronously within the iteration. No additional defect established by these diagnostics.",
         "vulture_min_confidence_80": "No findings."
       }
+    },
+    {
+      "date": "2026-10-14",
+      "scope": "MM-117 confirmed by the lead (same interleaving, in memory) and fixed.",
+      "source_sha256": {
+        "agent.py": "8c6008b889d3f97c9c81ded6340dc849bf76faf57d507977394837edd24345f1",
+        "test_app.py": "a2696c3ecdee0f43065a6c27a84f90cb0acc7bb03b882ce83561b984a3bb1e12"
+      },
+      "verified_fixed": [
+        "MM-117"
+      ],
+      "test_run": {
+        "command": "PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m pytest -q -p no:cacheprovider",
+        "result": "197 passed"
+      },
+      "limits": [
+        "No live model calls. Picks are re-checked only when the enforced profile changed during the turn."
+      ]
     }
   ]
 }

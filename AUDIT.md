@@ -293,3 +293,13 @@ And returned at `agent.py:306`:
 **Backlog update:** MM-117 takes precedence over the earlier list. Combined report now contains **117 findings: 1 critical, 13 high, 37 medium, 66 low; 91 open, 24 fixed, 1 partly fixed, 1 by design**. These totals retain the preceding report's classifications; only MM-005 and the new finding are certified by this focused post-fix verification. The agent/category-6 cell now includes MM-117.
 
 **Other checks:** MM-004's stale response was reproduced by executing the actual page script with controlled fetch promises: Bob's page displayed Alice's reply and allergy. MM-023's active-only removal still raised `StaleConfirmation`; MM-028 still showed the sign-in screen after an injected logout network failure. The JavaScript reproductions used a minimal DOM in Node, not a full browser. Ruff F/B returned eight diagnostics, none establishing another defect after inspecting callers (FastAPI dependency defaults, construction-matched zips, and a synchronously evaluated Pillow lambda). Vulture at 80% confidence returned no findings. No source was modified, no live model was called, and no deployment or full video render was performed in this follow-up.
+
+## MM-117 fixed — 2026-10-14
+
+Confirmed by the lead with the same interleaving (in memory, two conversations for one customer): the first reply returned Chicken Satay with no warning while peanut was saved.
+
+**Fix (agent.py):** once the reply model returns, the turn re-reads the profile under the same lock as memory writes. If what is enforced has changed, the model's picks are re-checked against the current recommendations, and if they fail, the reply is built from verified current data (the existing fallback). The reply, its dishes and the returned profile all answer to that state; a change after it is ordered after this reply.
+
+**Proof:** `test_a_reply_honours_an_allergy_saved_while_it_was_written` reproduces the interleaving; it fails on the previous agent.py and passes now (197 passed). The repro now returns peanut-free dishes with `fallback: true`. The Spike's recorded test count, the README and the walkthrough narration now say 197.
+
+Totals: 117 findings (1 critical, 13 high, 37 medium, 66 low); 90 open, 25 fixed, 1 partly fixed, 1 by design.
