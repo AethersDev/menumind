@@ -8,8 +8,9 @@ eval_report*.json
 .DS_Store
 video/.venv/
 video/clips/
-video/vo_scratch/
-video/voice/
+video/vo/
+video/vo_samples/
+video/.venv-tts/
 video/*.mp4
-video/assets/cards/
+video/walkthrough/data.js
 video/assets/capture_data.json

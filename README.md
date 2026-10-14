@@ -32,33 +32,39 @@ This is not a multi-agent system. The model is called for single, bounded tasks 
 output formats; it has no tools, takes no actions, and never decides what is stored or
 recommended.
 
-## Run it on macOS
+## Run it
 
-Requires Python 3.11 or newer (`brew install python@3.12` if `python3 --version` is older).
+You need Python 3.11 or newer and an OpenAI API key. The backend is FastAPI; memory is one
+SQLite file, created on first start. Tested on macOS with Python 3.13.
 
 ```bash
+git clone <repository-url> menumind
 cd menumind
 python3 -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate              # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
-# the OpenAI key, read from the macOS Keychain (service "openai-api-key")
-export OPENAI_API_KEY="$(security find-generic-password -s openai-api-key -w)"
-
-uvicorn server:app --reload
-open http://127.0.0.1:8000
+export OPENAI_API_KEY="your-api-key"   # Windows PowerShell: $env:OPENAI_API_KEY="your-api-key"
+uvicorn server:app --port 8000
 ```
 
-Create an account with a username and a 4 to 12 digit PIN, then chat. The order ticket on
-the right shows what MenuMind remembers, split into "every visit" and "just this
-conversation"; a temporary change is listed with the saved value it overrides. Each reply has
-a "How I read that" section showing the preferences it heard and the rule that decided what
-to do with them.
+Then open http://127.0.0.1:8000.
 
-The model provider is OpenAI by default: `gpt-5.4-mini` through Chat Completions for every
-model call. To use Anthropic instead, set `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY`;
-its default model is `claude-haiku-5-5`. `EXTRACT_MODEL` and `REPLY_MODEL` override the model
-per step, and `.env.example` lists the settings.
+The hosted copy, <live-url>, runs without a model key: open it to sign up and look around,
+but chatting needs a key, so run MenuMind locally as above to try the model.
+
+**Model: `gpt-5.4-mini`** (OpenAI, Chat Completions), for every model call. It is the
+default, so there is nothing to set: `LLM_PROVIDER` defaults to `openai`, and the OpenAI
+default model is `gpt-5.4-mini` (`DEFAULT_MODELS` in `llm.py`). This is the configuration the
+evaluation below was measured with. To pin it explicitly, also
+`export EXTRACT_MODEL=gpt-5.4-mini REPLY_MODEL=gpt-5.4-mini`. To check the whole app end to
+end over HTTP (it signs up two test customers and spends a few model calls):
+`python acceptance.py --no-restart` in a second terminal.
+
+On macOS the key can come from the Keychain instead:
+`export OPENAI_API_KEY="$(security find-generic-password -s openai-api-key -w)"`.
+To use Anthropic instead, set `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY`; its default
+model is `claude-haiku-5-5`. `.env.example` lists every setting.
 
 Requests to OpenAI are sent with `store=false`, so they aren't kept for OpenAI's distillation
 and evals products. That is separate from data sharing: if the OpenAI organization shares its
@@ -68,22 +74,32 @@ message, allergies included. That suits a demo with test conversations, not real
 **Without an API key**, `python preview.py` runs the same app with a scripted model that
 understands a handful of phrases (they print at startup). Use it for UI work.
 
-The server keeps everything in one SQLite file, `data/menumind.db`. Delete it to start fresh.
+The database is `data/menumind.db`. Stop the server and delete it to start fresh.
 
-## Try the six requirements
+## A five-minute tour
 
-| Requirement | Try this |
-|---|---|
-| 1. Natural conversation | "I love spicy food, but I hate mushrooms." |
-| 2. Menu recommendations | "What should I get for a main under $15?" Names and prices come from `menu.json`. |
-| 3. Long-term memory | Sign out, sign back in, start a new conversation: the ticket still lists your preferences. |
-| 4. Updating preferences | "I don't like spicy food anymore." For allergies: "I'm no longer allergic to peanuts" gets a confirmation question first. |
-| 5. Returning users, kept separate | Create a second account in a private window. Nothing from the first shows up. |
-| 6. Deployed interface | This page, locally now; see deployment below. |
+The order ticket on the right shows what MenuMind remembers, split into "every visit" and
+"just this conversation". Each reply has a "How I read that" section with the preferences it
+heard and the rule that decided what to do with each. These phrases are the ones filmed for
+the walkthrough video, with `gpt-5.4-mini`; the right column is the brief's requirement shown.
 
-Other things worth trying: "Nothing spicy tonight" (lasts only for this conversation),
-"I'm allergic to nuts" (saved as both peanut and tree nut), and "Does the pad thai have
-peanuts?" (a question, so nothing is saved).
+| # | Do this | You should see | Requirement |
+|---|---|---|---|
+| 1 | Create an account: any username, a 4 to 12 digit PIN | An empty ticket | |
+| 2 | "I love spicy food, but I hate mushrooms." | The reply's first line, written by the app: "Every visit: spice: hot; dislikes mushroom." Dishes recommended with names and prices from the menu | 1, 2 |
+| 3 | "I'm allergic to peanuts. What main would you suggest?" | "Every visit: avoiding peanut (allergy)." Chicken Satay, Shrimp Pad Thai and Tofu Pad Thai are never recommended | 2, 4 |
+| 4 | "Does the pad thai have peanuts?" | An answer, with the dish marked "not suitable for you". Nothing is saved: it's a question | 1 |
+| 5 | "Nothing spicy tonight, and keep it under $15." | "Just this conversation: ..." On the ticket: "Spice: none (saved: hot)", "Budget: up to $15.00 (saved: not set)" | 4 |
+| 6 | Sign out, sign back in, click "New conversation" | Peanut allergy, spice and mushrooms still saved; tonight's spice and budget gone | 3 |
+| 7 | "I'm no longer allergic to peanuts." | Only the app's question: "Should I stop treating peanut as an allergy? I'll keep avoiding it until you confirm." The allergy stays on the ticket | 4 |
+| 8 | "yes" | "Every visit: no longer avoiding peanut." Nothing else changes | 4 |
+| 9 | In a private window, create a second account | An empty ticket: nothing from the first customer | 5 |
+
+Requirement 6, the interface, is this page; the hosted copy serves it without a key. Also
+worth trying: "I think I might be allergic
+to shellfish" (avoided now, and the app asks whether to save it), "I'm allergic to nuts"
+(saved as both peanut and tree nut), and "Actually, I'm still allergic to peanuts" while a
+removal question waits (the question is dropped, and the allergy stays).
 
 ## How a message is handled
 
@@ -108,12 +124,13 @@ the top eligible dishes.
 Every reply that changed a preference starts with a line the app writes, not the model:
 "Every visit: ..." for what is saved and "Just this conversation: ..." for what is temporary,
 matching the ticket. In live runs the model sometimes called a saved change temporary. A
-turn that raises a question (a confirmation or a clarification) is answered by the app alone:
-what changed, then the question. While the question waits, the model answers later messages
-but may not ask anything itself. In live runs the model said an allergy removal had taken
-effect before the customer confirmed it (3 times), and once asked "Would you like me to
-suggest a starter?" in place of the app's question, so the customer's "yes" to that removed
-the allergy.
+turn that asks a question (a confirmation or a clarification), or asks it again after an
+answer that was neither yes nor no, is answered by the app alone: what changed, then the
+question, so a "yes" can only answer the app's question. In live runs the model said an
+allergy removal had taken effect before the customer confirmed it (3 times), once asked
+"Would you like me to suggest a starter?" in place of the app's question, so the customer's
+"yes" to that removed the allergy, and, replying while the question waited, offered "If you
+want, I can suggest something from the menu." just above it (3 of 3 in the final run).
 
 ## Files
 
@@ -132,13 +149,13 @@ the allergy.
 | `eval_extractor.py`, `extractor_cases.json`, `confirmation_cases.json` | Model evaluation: extractor and yes/no classifier |
 | `eval_conversations.py`, `conversation_cases.json` | Model evaluation: whole conversations through the app |
 | `acceptance.py` | End-to-end acceptance test of a running server, over HTTP |
-| `video/` | The walkthrough: script (`sections.py`), real-app capture, cards and build |
+| `video/` | The walkthrough: script (`sections.py`), real-app capture (`capture.py`), the film page it is rendered from (`walkthrough/`) and the build, which narrates it with a local synthetic voice and checks the narration against the script by transcribing it back. Its cold open, "The Spike" (`spike/`), is a short film whose data is recorded by running this code on a scripted conversation (`spike_trace.py`), every frame rendered in 3D in Blender (`spike3d.py`, `spike_render.py`) |
 | `fake_llm.py`, `preview.py` | Scripted model for tests and key-free preview |
 
 ## Tests and evaluation
 
 ```bash
-pytest                                        # 192 tests, no API calls
+pytest                                        # 196 tests, no API calls
 ```
 
 The tests use a scripted model. Evidence that MenuMind works with a real model comes from two
@@ -167,10 +184,8 @@ saved change temporary, and latency. It keeps every reply in the JSON report for
 
 ## Evidence with a real model
 
-Measured on 2026-10-13 with `gpt-5.4-mini` (OpenAI, Chat Completions) for every model call:
-`eval_extractor.py`, then `eval_conversations.py --repeats 3`. Later, the prepared ingredients
-got declared house recipes, which corrected one dish label (Spicy Chicken Bowl: no gluten); no
-evaluation case involves gluten, and prompts and logic did not change.
+Measured on 2026-10-13 on the code in this commit, with `gpt-5.4-mini` (OpenAI, Chat
+Completions) for every model call: `eval_extractor.py`, then `eval_conversations.py --repeats 3`.
 
 | What | Result |
 |---|---|
@@ -179,48 +194,61 @@ evaluation case involves gluten, and prompts and logic did not change.
 | Unsafe loosenings applied, proposed | 0, 0 |
 | False "yes" readings of confirmation answers | 0 of 18 |
 | Restrictions saved that nobody stated | 0 |
-| Conversations, turns fully correct | 41/42, 74/75 |
-| Fallback replies (model output unusable twice) | 0 |
-| Extractor decision accuracy, exact claims | 0.969, 0.812 |
-| Yes/no classifier accuracy | 17/18 |
-| Latency: extraction mean, p95; whole turn mean, p95, max | 1.2 s, 1.5 s; 2.5 s, 3.7 s, 5.0 s |
+| Conversations, turns fully correct | 42/42, 75/75 |
+| Fallback replies (model output unusable twice), model replies rejected | 0, 0 |
+| Turns that ask a question, answered by the app alone | 12 of 12 |
+| Extractor decision accuracy, exact claims | 0.938, 0.781 |
+| Yes/no classifier accuracy | 18/18 |
+| Latency: extraction mean, p95; whole turn mean, p95, max | 2.1 s, 4.7 s; 2.5 s, 4.3 s, 11.0 s |
 
-Misses in that run, none of them involving an allergy or diet:
+Misses in that run, none of them involving an allergy:
 
-- "I don't like spicy food anymore." cleared the spice preference instead of setting it to
-  none in 1 of 3 conversations, so spicy dishes were not ranked down.
-- "It's not that I don't like mushrooms, I just don't want them today." was read as a like.
-- "Sure, and nothing spicy tonight." as the answer to an allergy-removal question was read as
-  unclear, so the question stayed open.
+- In the extractor evaluation, "I used to be vegetarian." was read as "no longer vegetarian,
+  in the past" once. The diet stays vegetarian, but the app then doesn't ask how the customer
+  eats now. The same sentence was read correctly in all 3 conversation repeats, and the app
+  asked.
+- "It's not that I don't like mushrooms, I just don't want them today." was misread, so
+  mushrooms are not avoided that evening.
 
-The result took four runs. Each was read in full, replies included, and followed by a fix:
+The result took four rounds of fixes, plus one found while filming the walkthrough. Each run
+was read in full, replies included:
 
 | Run | What it found | Fix |
 |---|---|---|
 | 1 | "Nuts" saved as tree nut only (4 of 4); a correction to cashews saved as a like; "I love spicy food" saved as an ingredient; "I used to be vegetarian" read backwards; 6 replies called a saved change temporary | Extraction rules stated explicitly |
 | 2 | A request for a main fell back to starters; 3 replies still called a saved change temporary; a friend's diet saved as the customer's | The app writes the saved/temporary line; the fallback keeps the model's valid dishes; third-party rule |
 | 3 | 39/39 conversations, but the third-party rule made the extractor drop a companion's allergy (9/10) | Rule restated so companions count |
-| 4 | The table above | |
+| 4 | 0 unsafe recommendations, 41/42 conversations; a spice phrasing, the mushroom sentence and one yes/no answer misread | |
+| Filming | Asked to confirm an allergy removal, the model said the removal had happened (3 times across runs) and once asked its own yes/no question instead, so the customer's "yes" to that removed the allergy | A turn that raises a question is answered by the app alone |
+| Final | The table above; in its replies, asked to reply while the question waited, the model offered a dish just above it, an offer a "yes" would answer (3 of 3, found in review) | A turn that asks again is answered by the app alone too (made after this run, not re-run; it changes that one turn per run) |
 
 Limits: 32 phrasings, 18 answers and 14 conversations show that the model handles these, not
 every phrasing, so the numbers are counts, not rates. Model output varies even with the same
-code (in run 4 the spice sentence failed in 1 of 3 repeats), so use `--repeats` and rerun
-both evaluations after any change to a prompt or model. Reply text is checked for typed dish names and prices, not
+code (in run 4 the spice sentence failed in 1 of 3 repeats; in the final run the past-diet
+sentence was misread once of 4 readings), so use `--repeats` and rerun both evaluations after
+any change to a prompt or model. Reply text is checked for typed dish names and prices, not
 for every factual claim; the JSON reports keep every reply for reading.
 
-## Deploying from GitHub
+## Hosting
 
-GitHub Pages only serves static files, and this app needs a running server (it holds the API
-key and the memory database). Push the repository to GitHub, then connect it to a host that
-builds from a Dockerfile and offers a persistent disk, for example Render, Fly.io or Railway:
+The hosted copy, <live-url>, runs **without a model key**: anyone can open it, sign up, open
+the menu and see the order ticket, and the page says that chat is off and points here. To chat
+with the real model, run MenuMind locally with your own key, as above.
+
+GitHub Pages only serves static files, and this app needs a running server (it holds the
+memory database, and the API key when there is one). Push the repository to GitHub, then
+connect it to a host that builds from a Dockerfile, for example Render, Fly.io or Railway:
 
 1. Create a service from the GitHub repository, using the included `Dockerfile`.
-2. Attach a persistent volume mounted at `/data` (the database lives at `/data/menumind.db`).
-3. Set `OPENAI_API_KEY` as a secret (or `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY`).
-   `COOKIE_SECURE=1` is already set for HTTPS.
+2. Optional: attach a persistent volume mounted at `/data` (the database lives at
+   `/data/menumind.db`). Without one, accounts reset whenever the service restarts.
+3. Leave `OPENAI_API_KEY` unset for a key-less copy: `/api/health` then reports
+   `"chat_enabled": false` and the page turns chat off. To enable chat, set it as a secret (or
+   `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY`). `COOKIE_SECURE=1` is already set for HTTPS.
 4. Run a single instance (see limitations).
-5. Cap request bodies at the proxy if your host allows it; the app caps fields, not bodies.
-6. Run the acceptance test against the public URL, and restart the service when it asks:
+5. The app refuses request bodies over 16 KB itself; a cap at the proxy is a second line.
+6. With a key set, run the acceptance test against the public URL, and restart the service
+   when it asks:
 
    ```bash
    python acceptance.py --url https://your-app.example.com
@@ -231,8 +259,9 @@ builds from a Dockerfile and offers a persistent disk, for example Render, Fly.i
    removing it asks first, keeps avoiding peanut until A says yes, then removes only the
    allergy; customer B sees none of A's memory and cannot open A's conversation. It prints
    PASS or FAIL per check and exits 1 on any failure. If the database is not on a persistent
-   disk, it stops at the restart. Locally: `python acceptance.py --no-restart`, or restart
-   `uvicorn` when asked.
+   disk, it stops at the restart. On a key-less copy it stops at once, since chat is off; run
+   it locally instead, against a server started with your key: `python acceptance.py
+   --no-restart`, or restart `uvicorn` when asked.
 
 Logs go to stderr. Model failures and rejected model replies are warnings, logged with user
 ids but not message text (an extraction error may quote the value it rejected). Unexpected

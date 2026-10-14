@@ -260,7 +260,6 @@ class Agent:
 
         changes = [describe(d) for dec in decisions for d in dec.events]
         questions = [dec.question for dec in decisions if dec.question]
-        raised = bool(questions)  # this message raised a question (before any re-ask is added)
         trace["decisions"] = [{"rule": d.rule, "outcome": d.outcome, "reason": d.reason}
                               for d in decisions]
         notice = None
@@ -287,12 +286,13 @@ class Agent:
         recs = recommend(self.menu, profile.active)
         question = pending.question if pending else None  # the one awaiting yes or no
 
-        if raised:  # the app alone answers a turn that asks something: seen live, the model
-            message, picks = "", []  # said "I'll stop treating peanut" before anything changed
+        if questions:  # the app alone answers a turn that asks, or asks again: seen live, the
+            # model said "I'll stop treating peanut" before anything changed, and above a question
+            # asked again offered "I can suggest something", which a "yes" would have answered
+            message, picks = "", []
             trace.update(reply_errors=[], rejected=[], fallback=False)
         else:
-            message, picks = self._reply(state, text, profile, recs, changes, questions, notice,
-                                         trace)
+            message, picks = self._reply(state, text, profile, recs, changes, notice, trace)
         reply, mentioned = render(message, picks, self.menu, recs, profile.active["budget_max"])
         # what changed and what must be answered are the app's words, never the model's
         asks = " ".join(f"**{q}**" for q in questions)
@@ -307,7 +307,7 @@ class Agent:
 
     # ------------------------------------------------------------------ reply model
 
-    def _briefing(self, text: str, profile: Profile, recs: Recommendations, changes, questions,
+    def _briefing(self, text: str, profile: Profile, recs: Recommendations, changes,
                   notice) -> str:
         def cand(c):
             return {"id": c.item.id, "name": c.item.name, "category": c.item.category,
@@ -316,7 +316,9 @@ class Agent:
             "customer_message": text,
             "profile": {"enforced_now": _plain(profile.active), "saved": _plain(profile.durable)},
             "changes": changes,
-            "questions_to_ask": questions,
+            # always empty (a turn that asks is answered by the app alone); kept so the model's
+            # input is the one the live evaluation measured
+            "questions_to_ask": [],
             # every eligible dish: a cut by rank can leave out a whole category (all mains)
             "recommendable": [cand(c) for c in recs.candidates],
             "over_budget": [cand(c) for c in recs.over_budget],
@@ -335,13 +337,13 @@ class Agent:
                                                          "schema": TURN_SCHEMA}})
         return "".join(b.text for b in resp.content if getattr(b, "type", None) == "text").strip()
 
-    def _reply(self, state: _ConvState, text, profile, recs, changes, questions, notice,
+    def _reply(self, state: _ConvState, text, profile, recs, changes, notice,
                trace: dict) -> tuple[str, list]:
         """(message, picks): two attempts by the model, then a reply built from verified data.
         Memory is already settled, so a failure here only costs prose. Records the rejected
         outputs, their problems and whether the fallback was used in `trace`."""
         messages = state.history + [{"role": "user", "content": self._briefing(
-            text, profile, recs, changes, questions, notice)}]
+            text, profile, recs, changes, notice)}]
         errors: list = []
         rejected: list = []
         usable = None  # the model's dishes, when they passed and only its wording failed
@@ -359,8 +361,6 @@ class Agent:
                 problems = [f"unreadable reply ({type(e).__name__}: {e})"]
             else:
                 problems = check_reply(message, picks, self.menu, recs)
-                if questions and "?" in message:  # a "yes" must have only one question to answer
-                    problems.append("asked a question while the app's question is waiting")
                 if not check_reply("", picks, self.menu, recs):  # the dishes alone pass
                     usable = picks
                 if not message.strip():
@@ -375,7 +375,7 @@ class Agent:
                 {"role": "user", "content": "That reply broke these rules: " + "; ".join(problems)
                  + ". Rewrite it following the rules."}]
         trace["fallback"] = True
-        return fallback_reply(recs, notice, usable, asking=bool(questions))
+        return fallback_reply(recs, notice, usable)
 
 
 def _parse(raw: str) -> tuple[str, list]:
@@ -387,12 +387,11 @@ def _parse(raw: str) -> tuple[str, list]:
     return message, picks
 
 
-def fallback_reply(recs: Recommendations, notice: Optional[str], picks: Optional[list] = None,
-                   asking: bool = False) -> tuple[str, list]:
+def fallback_reply(recs: Recommendations, notice: Optional[str],
+                   picks: Optional[list] = None) -> tuple[str, list]:
     """(message, picks) built only from verified data, for when the model can't produce a
     valid reply. `picks` are the model's own dishes when they passed and only its wording
-    failed (they follow the request, e.g. mains); otherwise the top-ranked dishes. The app
-    adds any question itself (`asking`), so the message can then be empty."""
+    failed (they follow the request, e.g. mains); otherwise the top-ranked dishes."""
     if picks is None:
         picks = [c.item.id for c in recs.candidates[:MAX_PICKS]]
     parts = [notice] if notice else []
@@ -400,8 +399,7 @@ def fallback_reply(recs: Recommendations, notice: Optional[str], picks: Optional
         parts.append("A few options that fit:")
     elif not recs.candidates:
         parts.append("Nothing on the menu fits every preference you've given me.")
-    default = "" if asking else "I couldn't put a reply together just now; please ask again."
-    return " ".join(parts) or default, picks
+    return " ".join(parts) or "I couldn't put a reply together just now; please ask again.", picks
 
 
 _PLURALS = (("ies", "y"), ("es", ""), ("s", ""))  # berries, tomatoes, mushrooms

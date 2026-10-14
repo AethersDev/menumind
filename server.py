@@ -195,8 +195,8 @@ def create_app(db_path: Optional[str] = None, client=None, menu_path=None) -> Fa
         try:
             result = agent.turn(user_id, cid, text)
         except ModelUnavailable:
-            raise HTTPException(503, f"Chat is off: the server has no {KEY_ENV[PROVIDER]}. "
-                                     "Set it and restart the server.") from None
+            raise HTTPException(503, f"Chat is off: this server has no {KEY_ENV[PROVIDER]}. To chat, "
+                                     "run MenuMind with your own key; the README explains how.") from None
         except UnknownConversation:
             raise HTTPException(404, ENDED) from None
         return {"reply": result.reply, "mentioned": result.mentioned, "changes": result.changes,

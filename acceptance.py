@@ -32,6 +32,9 @@ def main() -> None:
                     help="skip the restart check (it waits for the server to restart)")
     args = ap.parse_args()
     base, tag, results = args.url.rstrip("/"), secrets.token_hex(3), []
+    if not httpx.get(f"{base}/api/health").raise_for_status().json()["chat_enabled"]:
+        sys.exit("This server has no model key, so chat is off. Run the acceptance test against a "
+                 "server started with a key, such as a local one.")
 
     def check(name: str, ok: bool, detail="") -> None:
         results.append(ok)

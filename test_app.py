@@ -273,18 +273,18 @@ def test_the_app_asks_its_own_question_and_no_other(tmp_path):
     """Seen live, on the turn that raised an allergy-removal question: the model skipped the
     question and asked "Would you like me to suggest a starter?" (the customer's "yes" then
     removed the allergy), and in three replies it said it would "stop treating peanut as an
-    allergy" before anything changed. A turn that raises a question is answered by the app
-    alone; while the question waits, the model's replies may not ask anything."""
-    model = lambda b, m: says("I'll stop treating peanut as an allergy. Want a starter?")
+    allergy" before anything changed. Asking again after an unclear answer, it offered "If you
+    want, I can suggest something from the menu." just above the question (3 of 3 eval runs),
+    an offer a "yes" would answer. A turn that asks, or asks again, is answered by the app alone."""
+    model = lambda b, m: says("I'll stop treating peanut. If you want, I can suggest a starter.")
     agent, fake = make_agent(tmp_path, responder=model)
     c1 = agent.start_conversation("alice")
     agent.turn("alice", c1, "I'm allergic to peanuts.")
     calls = fake.calls["respond"]
     r = agent.turn("alice", c1, "I'm no longer allergic to peanuts.")
     assert r.reply == f"**{r.question}**" and fake.calls["respond"] == calls  # no model text
-    r = agent.turn("alice", c1, "hmm, not sure")  # still waiting: the model answers, may not ask
-    assert "starter" not in r.reply and r.reply.endswith(f"**{r.question}**")
-    assert "asked a question" in r.trace["reply_errors"][0][0]
+    r = agent.turn("alice", c1, "hmm, not sure")  # asked again: still no model text
+    assert r.reply == f"**{r.question}**" and fake.calls["respond"] == calls
 
 
 def test_unclear_answer_changes_nothing_and_asks_again(tmp_path):
@@ -657,8 +657,10 @@ def test_chat_without_api_key_is_503(tmp_path, monkeypatch):
         monkeypatch.delenv(key, raising=False)
     app = create_app(db_path=str(tmp_path / "nokey.sqlite"))
     c, cid = signup(app, "alice")
+    assert c.get("/api/health").json()["chat_enabled"] is False  # the page turns chat off from this
     r = c.post("/api/chat", json={"conversation_id": cid, "message": "hi"})
-    assert r.status_code == 503 and llm.KEY_ENV[llm.PROVIDER] in r.json()["detail"]
+    detail = r.json()["detail"]  # a hosted copy may run without a key: say how to chat anyway
+    assert r.status_code == 503 and llm.KEY_ENV[llm.PROVIDER] in detail and "README" in detail
     assert c.get("/api/me").status_code == 200  # memory still readable
 
 

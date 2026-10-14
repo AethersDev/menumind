@@ -23,6 +23,7 @@
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; }
+#app { height: 100%; }  /* so .main fits the window: the log scrolls, the ticket stays */
 body {
   background: var(--paper); color: var(--ink);
   font: 17px/1.55 var(--body);
@@ -135,6 +136,7 @@ dialog::backdrop { background: rgba(31, 42, 61, .45); }
 .menu-body { padding: 4px 22px 22px; max-height: 70vh; overflow-y: auto; }
 .menu-body h3 { font: 500 19px/1.2 var(--display); margin: 22px 0 6px; }
 .dish { padding: 10px 0; border-top: 1px dashed var(--rail); }
+.chat-off { margin: 0 0 10px; padding: 10px 14px; border-radius: 6px; font-size: 15px; background: var(--amber-soft); }
 .menu-note { margin: 0; padding: 12px 22px; color: var(--ink-soft); font-size: 15px;
   background: var(--amber-soft); }  /* first thing in the menu, so no one has to scroll to it */
 .dish .top { display: flex; gap: 12px; }
@@ -191,6 +193,9 @@ dialog::backdrop { background: rgba(31, 42, 61, .45); }
   <main class="main">
     <section class="chat" aria-label="Conversation">
       <div class="log" id="log" aria-live="polite"></div>
+      <p class="chat-off" id="chat-off" hidden>Chat is off on this hosted copy: it has no model key.
+        You can sign up, open the menu and see the order ticket here. To chat, run MenuMind with your
+        own OpenAI key (model gpt-5.4-mini); the README explains how.</p>
       <form class="composer" id="composer">
         <textarea id="message" aria-label="Message" placeholder="What are you in the mood for?" required></textarea>
         <button class="btn" id="send">Send</button>
@@ -409,6 +414,14 @@ $("open-menu").addEventListener("click", async () => {
   $("menu").showModal();
 });
 $("close-menu").addEventListener("click", () => $("menu").close());
+
+// A hosted copy may run without a model key: say so before anyone types, not after.
+// If the check itself fails, chat stays on and any error shows when a message is sent.
+api("/api/health").then((h) => {
+  if (h.chat_enabled) return;
+  $("chat-off").hidden = false;
+  $("message").disabled = $("send").disabled = true;
+}).catch(() => {});
 
 (async () => {
   if (window.matchMedia("(min-width: 861px)").matches) $("ticket-wrap").classList.remove("collapsed");
