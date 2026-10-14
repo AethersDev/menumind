@@ -206,7 +206,7 @@ def session(pw, shoot: Shoot, menu: dict, db: Path) -> dict:
         shoot.check("remove_ask", [(c["attribute"], c["polarity"], c["subject"]) for c in r["trace"]["claims"]]
                     == [("allergen", "negate", "peanut")], f"claims {r['trace']['claims']}")
         shoot.check("remove_ask", [d["rule"] for d in r["trace"]["decisions"]] == ["R10"],
-                    f"decisions {r['trace']['decisions']}")  # the deep-dive cards show this turn
+                    f"decisions {r['trace']['decisions']}")  # the conflict scene shows this turn
         page.wait_for_timeout(1500)
         shoot.end("remove_ask")
         data["removal_turn"] = {"say": "I'm no longer allergic to peanuts.", "claims": r["trace"]["claims"],

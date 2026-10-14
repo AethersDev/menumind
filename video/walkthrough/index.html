@@ -1,0 +1,761 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>MenuMind walkthrough</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@300;500;700;800;900&family=Big+Shoulders+Stencil+Display:wght@800&family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=block">
+<style>
+/* The walkthrough as a film page, in the Spike's language: the pass at night, thermal paper,
+   steel, the heat lamp. Rendered by build.py, which seeks window.__film frame by frame.
+   App footage keeps its own colors; only the stage around it and the annotations are drawn. */
+:root {
+  --night: #161C21; --steel: #27313A; --steel-hi: #8E9CA7; --paper: #EEF0EA; --ink: #23272B;
+  --lamp: #FF9447; --stamp: #2C4FA6; --alarm: #C93A2B; --ok: #7CD69A;
+  --display: "Big Shoulders Display", "Arial Narrow", sans-serif;
+  --stencil: "Big Shoulders Stencil Display", "Big Shoulders Display", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; background: #000; }
+#stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; color: var(--paper); font: 400 26px/1.4 var(--mono);
+  background:
+    radial-gradient(120% 90% at 50% 40%, transparent 55%, rgba(0,0,0,.55) 100%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.018) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, #1B232A 0%, #141A1F 100%); }
+.layer { position: absolute; inset: 0; pointer-events: none; }
+#bokeh { inset: -300px; }
+#bokeh i { position: absolute; border-radius: 50%; filter: blur(22px); }
+#grain { opacity: .06; mix-blend-mode: overlay; z-index: 50;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E"); }
+#vignette { z-index: 49; background: radial-gradient(130% 100% at 50% 45%, transparent 60%, rgba(0,0,0,.42) 100%); }
+
+/* ---------- the app, on screen ---------- */
+#cam { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; z-index: 10; }
+#screen { position: absolute; inset: 0; border-radius: 22px; overflow: hidden; background: #E9EEE8;
+  box-shadow: 0 50px 140px rgba(0,0,0,.65), 0 0 0 2px rgba(255,255,255,.07); }
+#shot { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
+#marks { position: absolute; inset: 0; }
+.spot { position: absolute; border-radius: 12px;
+  box-shadow: 0 0 0 4px var(--lamp), 0 0 36px 8px rgba(255,148,71,.5), 0 0 0 4000px rgba(10,13,16,.46); }
+.label { position: absolute; padding: 12px 20px 13px 26px; background: var(--paper); color: var(--ink); border-radius: 4px;
+  font: 600 30px/1.2 var(--mono); white-space: nowrap; box-shadow: 0 14px 30px rgba(0,0,0,.4); }
+.label::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 8px; background: var(--lamp); border-radius: 4px 0 0 4px; }
+#live { position: absolute; right: 0; top: -60px; font: 500 28px/1 var(--mono); color: var(--steel-hi); letter-spacing: .04em; }
+#live b { color: var(--lamp); font-weight: 600; }
+#live i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #FF5A4E; margin-right: 10px;
+  box-shadow: 0 0 12px #FF5A4E; font-style: normal; }
+#tag { position: absolute; left: 64px; top: 30px; z-index: 30; padding: 12px 22px 14px; border-radius: 8px;
+  background: rgba(14,18,22,.82); box-shadow: 0 10px 30px rgba(0,0,0,.4); }
+#tag small { display: block; font: 600 18px/1 var(--mono); letter-spacing: .18em; color: var(--lamp); text-transform: uppercase; }
+#tag b { display: block; margin-top: 8px; font: 700 46px/1 var(--display); color: var(--paper); }
+
+/* ---------- scenes ---------- */
+#scenes { z-index: 20; }
+.scene { position: absolute; inset: 0; }
+.abs { position: absolute; }
+.eyebrow { position: absolute; font: 600 21px/1 var(--mono); letter-spacing: .2em; text-transform: uppercase; color: var(--lamp); }
+.head { position: absolute; font: 700 92px/1 var(--display); letter-spacing: -.005em; color: var(--paper); }
+.big { position: absolute; font: 300 124px/1.02 var(--display); color: var(--paper); }
+.big.bold { font-weight: 700; }
+.line { position: absolute; font: 400 34px/1.35 var(--mono); color: var(--steel-hi); }
+.line b { color: var(--paper); font-weight: 600; }
+.chip { position: absolute; padding: 10px 18px 11px; border-radius: 999px; font: 600 24px/1 var(--mono); color: var(--night); background: var(--lamp); }
+.chip.steel { background: #33404A; color: var(--paper); }
+.panel { position: absolute; padding: 22px 26px; border-radius: 10px; background: linear-gradient(180deg, #2D3841, #232C33);
+  border: 1px solid #3B4852; box-shadow: 0 14px 30px rgba(0,0,0,.35); }
+.panel h3 { margin: 0 0 8px; font: 700 44px/1.02 var(--display); color: var(--paper); }
+.panel p { margin: 0; font: 400 23px/1.35 var(--mono); color: var(--steel-hi); }
+.panel.model { border-color: rgba(255,148,71,.75); background: linear-gradient(180deg, #3A3129, #2A2520); }
+.panel.model h3 { color: #FFD2AE; }
+.glow { box-shadow: 0 0 0 3px var(--lamp), 0 0 40px 6px rgba(255,148,71,.45) !important; }
+.paper { position: absolute; padding: 22px 26px 30px; background: var(--paper); color: var(--ink); font: 400 24px/1.38 var(--mono);
+  box-shadow: 0 16px 32px rgba(0,0,0,.4);
+  -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 18px 100%;
+          mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 18px 100%; }
+.paper .n { font: 800 50px/1 var(--display); }
+.paper small { display: block; font-size: 18px; color: #5E646A; letter-spacing: .12em; text-transform: uppercase; font-weight: 600; }
+.paper hr { border: 0; border-top: 2px dashed #A9ADA8; margin: 12px 0; }
+.paper.tonight { background: #F3EBD9; }
+.rail { position: absolute; height: 14px; border-radius: 7px; background: linear-gradient(180deg, #8C99A3, #4D5862 60%, #2E363D);
+  box-shadow: 0 6px 14px rgba(0,0,0,.5); }
+.clip { position: absolute; left: 50%; top: -10px; width: 46px; height: 22px; margin-left: -23px; border-radius: 4px; background: #3E4A55; }
+.stamp { position: absolute; padding: 4px 14px 2px; border: 6px solid currentColor; border-radius: 8px; white-space: nowrap;
+  font: 800 52px/1 var(--stencil); letter-spacing: .03em; color: var(--stamp); transform: rotate(-9deg); opacity: 0; mix-blend-mode: multiply;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.55' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3.2 0 0 0 -0.85'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23s)'/%3E%3C/svg%3E");
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.55' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3.2 0 0 0 -0.85'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23s)'/%3E%3C/svg%3E"); }
+.stamp.red { color: var(--alarm); }
+.stamp.loud { mix-blend-mode: normal; }
+svg.wires { position: absolute; left: 0; top: 0; overflow: visible; }
+svg.wires path { fill: none; stroke: var(--lamp); stroke-width: 4; stroke-linecap: round; filter: drop-shadow(0 0 6px rgba(255,148,71,.8)); }
+svg.wires path.steel { stroke: #6E7C88; filter: none; }
+svg.wires path.red { stroke: var(--alarm); filter: drop-shadow(0 0 8px rgba(201,58,43,.8)); }
+.dot { position: absolute; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: #FFD2AE;
+  box-shadow: 0 0 22px 8px rgba(255,148,71,.85); }
+
+/* tickets on the spike's log, as in the film */
+.mini { position: absolute; width: 226px; padding: 14px 16px 24px; background: var(--paper); color: var(--ink); font: 400 15px/1.35 var(--mono);
+  box-shadow: 0 12px 24px rgba(0,0,0,.4);
+  -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 14px 100%;
+          mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 14px 100%; }
+.mini.tonight { background: #F3EBD9; }
+.mini .seq { font: 800 32px/1 var(--display); }
+.mini .op { margin-top: 6px; font-weight: 600; font-size: 14px; }
+.mini .val { font: 700 38px/1 var(--display); margin: 2px 0; }
+.mini .meta { font-size: 13px; color: #50565C; }
+.mini .ev { margin-top: 6px; font-size: 13px; color: #3A3F44; font-style: italic; }
+.hold { position: absolute; width: 400px; padding: 20px 24px 34px; background: var(--paper); color: var(--ink); font: 400 20px/1.38 var(--mono);
+  box-shadow: 0 16px 32px rgba(0,0,0,.4);
+  -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 18px 100%;
+          mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 18px 100%; }
+.hold .seq { font: 800 48px/1 var(--display); }
+.hold .val { font: 700 58px/1 var(--display); }
+.hold .meta { font-size: 18px; color: #50565C; }
+.hold hr { border: 0; border-top: 2px dashed #A9ADA8; margin: 10px 0; }
+.slip { position: absolute; padding: 12px 20px 13px; background: var(--paper); color: var(--ink); font: 500 30px/1.3 var(--mono); border-radius: 3px;
+  box-shadow: 0 10px 22px rgba(0,0,0,.4); white-space: nowrap; }
+.slip small { display: block; font-size: 20px; color: #5E646A; font-weight: 400; }
+.rules { position: absolute; width: 760px; border-collapse: collapse; font: 400 21px/1.3 var(--mono); color: var(--steel-hi); }
+.rules td { padding: 9px 12px; border-bottom: 1px solid #34414B; vertical-align: top; }
+.rules td:first-child { font-weight: 600; color: var(--paper); width: 96px; }
+.rules tr.hl td { color: var(--night); background: var(--lamp); border-bottom-color: var(--lamp); }
+
+/* the menu, as in the film */
+.card { position: absolute; width: 330px; height: 140px; padding: 16px 18px; border-radius: 8px; background: linear-gradient(180deg, #2D3841, #232C33);
+  border: 1px solid #3B4852; box-shadow: 0 8px 16px rgba(0,0,0,.3); }
+.card .name { font: 700 34px/1 var(--display); color: var(--paper); }
+.card .meta { margin-top: 10px; display: flex; gap: 12px; align-items: center; font: 400 18px/1 var(--mono); color: var(--steel-hi); }
+.card .price { color: var(--paper); font-weight: 500; }
+.card .pips { display: inline-flex; gap: 4px; }
+.card .pips i { width: 10px; height: 10px; border-radius: 2px; background: #3E4B55; }
+.card .pips i.on { background: var(--lamp); }
+.draft { position: absolute; font: 400 36px/1.45 var(--mono); color: var(--lamp); white-space: pre; }
+.draft .tok { color: var(--night); background: var(--lamp); padding: 0 8px; border-radius: 4px; font-weight: 600; }
+.draft small { display: block; font-size: 20px; color: var(--steel-hi); margin-bottom: 8px; white-space: normal; }
+.tag { position: absolute; left: 0; top: 0; padding: 8px 14px; background: var(--paper); color: var(--ink); border-radius: 4px;
+  font: 700 30px/1 var(--display); white-space: nowrap; box-shadow: 0 0 26px rgba(255,148,71,.7); }
+.check { position: absolute; font: 400 28px/1.35 var(--mono); color: var(--paper); white-space: nowrap; }
+.check i { font-style: normal; color: var(--ok); font-weight: 700; margin-right: 14px; }
+
+/* menu data */
+.tree { position: absolute; font: 400 30px/1 var(--mono); color: var(--paper); }
+.tree .row { position: absolute; left: 0; white-space: nowrap; }
+.tree .row .h { color: #FFD2AE; }
+.al { display: inline-block; margin-left: 14px; padding: 5px 12px 6px; border-radius: 6px; background: var(--alarm); color: #fff; font: 600 21px/1 var(--mono); vertical-align: 3px; }
+
+/* numbers */
+.num { position: absolute; font: 900 260px/.86 var(--display); color: var(--paper); font-variant-numeric: tabular-nums; }
+.num.lamp { color: var(--lamp); }
+.num small { display: block; margin-top: 44px; font: 400 30px/1.3 var(--mono); color: var(--steel-hi); }
+.bars { position: absolute; display: flex; align-items: flex-end; gap: 28px; height: 300px; }
+.bars .bar { width: 120px; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
+.bars .fill { width: 100%; background: linear-gradient(180deg, var(--lamp), #C8682B); border-radius: 6px 6px 0 0; transform-origin: 50% 100%; }
+.bars .v { font: 700 34px/1 var(--display); margin-bottom: 10px; }
+.bars .x { font: 400 20px/1 var(--mono); color: var(--steel-hi); margin-top: 12px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="layer" id="bokeh"></div>
+  <div id="cam"><div id="live"><i></i>The real app · <b>gpt-5.4-mini</b> · only the model's waits are shortened</div>
+    <div id="screen"><img id="shot" alt=""><div id="marks"></div></div></div>
+  <div class="layer" id="scenes"></div>
+  <div id="tag"><small></small><b></b></div>
+  <div class="layer" id="vignette"></div>
+  <div class="layer" id="grain"></div>
+  <div class="layer" id="black" style="background:#000;z-index:60"></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/MotionPathPlugin.min.js"></script>
+<script src="data.js"></script>
+<script>
+(async () => {
+"use strict";
+// the timeline measures text as it is built, so the fonts load first; without them, no film
+for (const f of ["700 92px 'Big Shoulders Display'", "800 52px 'Big Shoulders Stencil Display'", "400 26px 'IBM Plex Mono'"]) {
+  if (!(await document.fonts.load(f)).length) throw new Error(`font not loaded: ${f}`);
+}
+gsap.registerPlugin(MotionPathPlugin);
+const W = window.WALK, D = W;
+const $ = (s, r = document) => r.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const MENU = Object.fromEntries(W.menu.map((i) => [i.id, i]));
+const money = (p) => `$${Number(p).toFixed(2)}`;
+const tl = gsap.timeline({ paused: true });
+const cam = $("#cam"), shot = $("#shot"), marks = $("#marks"), tag = $("#tag"), live = $("#live");
+
+function el(tag, cls, html, parent) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (html != null) e.innerHTML = html;
+  parent.appendChild(e);
+  return e;
+}
+function place(e, x, y, w) { Object.assign(e.style, { left: x + "px", top: y + "px" }); if (w) e.style.width = w + "px"; return e; }
+/** When the narration reaches these words: the section's text read at an even pace. */
+function cue(s, words, after = 0) {
+  const i = s.text.indexOf(words);
+  if (i < 0) throw new Error(`${s.id}: "${words}" is not in the narration`);
+  return s.t0 + W.lead + s.vo * i / s.text.length + after;
+}
+function show(e, at, d = .55, from = { y: 22 }) {
+  gsap.set(e, { autoAlpha: 0, ...from });
+  tl.to(e, { autoAlpha: 1, x: 0, y: 0, scale: 1, duration: d, ease: "power2.out" }, at);
+  return e;
+}
+function fade(e, at, to = 0, d = .45) { tl.to(e, { autoAlpha: to, duration: d, ease: "power2.inOut" }, at); }
+function words(e, text, at, per = .085) {
+  e.innerHTML = text.split(" ").map((w) => `<span>${esc(w)}</span>`).join(" ");
+  const spans = e.querySelectorAll("span");
+  gsap.set(spans, { opacity: 0, y: 14 });
+  tl.to(spans, { opacity: 1, y: 0, duration: .35, stagger: per, ease: "power2.out" }, at);
+  return e;
+}
+function typeIn(e, text, at, per = .035) {
+  e.innerHTML = [...text].map((c) => `<span>${c === " " ? " " : esc(c)}</span>`).join("");
+  const spans = e.querySelectorAll("span");
+  gsap.set(spans, { opacity: 0 });
+  tl.to(spans, { opacity: 1, duration: .01, stagger: per, ease: "none" }, at);
+  return at + spans.length * per;
+}
+function stamp(parent, text, at, { red = false, loud = false, x = null, y = null, rot = -9, size = 52 } = {}) {
+  const st = el("div", "stamp" + (red ? " red" : "") + (loud ? " loud" : ""), esc(text), parent);
+  Object.assign(st.style, { fontSize: size + "px", transform: `rotate(${rot}deg)` });
+  if (x != null) st.style.left = x + "px";
+  if (y != null) st.style.top = y + "px";
+  tl.fromTo(st, { opacity: 0, scale: 1.9 }, { opacity: .92, scale: 1, duration: .14, ease: "power4.in", immediateRender: false }, at);
+  return st;
+}
+function count(e, to, at, d, fmt = (v) => String(Math.round(v))) {
+  const o = { v: 0 };
+  e.firstChild.textContent = fmt(0);
+  tl.to(o, { v: to, duration: d, ease: "power2.out", onUpdate: () => { e.firstChild.textContent = fmt(o.v); } }, at);
+}
+function wire(svg, d, at, dur = .8, cls = "") {
+  const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  p.setAttribute("d", d);
+  if (cls) p.setAttribute("class", cls);
+  svg.appendChild(p);
+  const len = p.getTotalLength();
+  gsap.set(p, { strokeDasharray: len, strokeDashoffset: len });
+  tl.to(p, { strokeDashoffset: 0, duration: dur, ease: "power2.inOut" }, at);
+  return p;
+}
+function wires(parent) {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("class", "wires"); svg.setAttribute("width", 1920); svg.setAttribute("height", 1080);
+  parent.appendChild(svg);
+  return svg;
+}
+function scene(v) {
+  const c = el("div", "scene", null, $("#scenes"));
+  gsap.set(c, { autoAlpha: 0 });
+  tl.to(c, { autoAlpha: 1, duration: .6, ease: "power2.out" }, v.t0);
+  tl.to(c, { autoAlpha: 0, duration: .5, ease: "power2.in" }, v.t0 + v.dur - .5);
+  return c;
+}
+const within = (v, t, margin = .6) => Math.min(Math.max(t, v.t0 + .3), v.t0 + v.dur - margin);
+
+/* ================================================================ the room */
+const bokeh = $("#bokeh");
+[[180, 210, 120, "255,170,90", .22], [520, 120, 70, "255,200,140", .18], [930, 260, 160, "120,170,210", .10], [1460, 150, 90, "255,150,80", .2],
+ [1900, 300, 140, "255,190,120", .14], [2250, 110, 80, "140,190,220", .12], [300, 900, 110, "255,140,70", .10], [1700, 1000, 150, "110,150,190", .09],
+ [2300, 700, 120, "255,170,100", .12], [80, 760, 90, "255,190,130", .1]]
+  .forEach(([x, y, r, c, a]) => { const b = el("i", null, null, bokeh); Object.assign(b.style, { left: x + "px", top: y + "px", width: r * 2 + "px", height: r * 2 + "px", background: `radial-gradient(circle, rgba(${c},${a * 2.2}), rgba(${c},0) 70%)` }); });
+
+/* ================================================================ the app, on screen */
+const WIDE = { s: .8, cx: 960, cy: 487 };  // room above the screen for the section tag
+// Every camera move is collected, then laid down in time order (moveCam): two moves that overlap
+// would make the later one start from where the earlier one ends, a cut in a single frame.
+const moves = [];
+const moveCam = (at, d, vars, from) => moves.push({ at, d, vars, from });
+function camTo(at, target, d = 1.2, ease = "power2.inOut") {
+  const { s } = target, clamp = (v, half, size) => s > 1 ? Math.min(Math.max(v, half / s), size - half / s) : v;
+  const cx = clamp(target.cx, 960, 1920), cy = clamp(target.cy, 540, 1080);  // zoomed in: stay on the screen
+  moveCam(at, d, { x: 960 - cx * s, y: 540 - cy * s, scale: s, ease });
+}
+const AWAY = { autoAlpha: 0, scale: .7, x: 960 - 960 * .7, y: 540 - 540 * .7 - 40, ease: "power2.in" };
+function fit(box, pad, max) {
+  const w = box[2] - box[0] + 2 * pad, h = box[3] - box[1] + 2 * pad;
+  return { s: Math.max(WIDE.s, Math.min(max, 1920 * .94 / w, 1080 * .9 / h)), cx: (box[0] + box[2]) / 2, cy: (box[1] + box[3]) / 2 };
+}
+const union = (a, b) => [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[2], b[2]), Math.max(a[3], b[3])];
+const regionAt = (beat, local) => (beat.states.filter(([t]) => t <= local).pop() || [0, {}])[1];  // {} while loading
+
+const flat = W.sections.flatMap((s) => s.visuals.map((v) => ({ ...v, s })));
+const captures = flat.filter((v) => v.kind === "capture");
+gsap.set(cam, { x: 960 - WIDE.cx * WIDE.s, y: 540 - WIDE.cy * WIDE.s, scale: WIDE.s, autoAlpha: 0 });
+gsap.set(tag, { autoAlpha: 0 });
+let productNo = 0;
+const LIVE = W.sections.filter((s) => s.visuals[0].kind === "capture").length;
+
+flat.forEach((v, k) => {
+  if (v.kind !== "capture") return;
+  const prev = flat[k - 1], next = flat[k + 1], beat = W.beats[v.name], s = v.s, end = v.t0 + v.dur;
+  const fresh = !prev || prev.kind !== "capture" || beat.blank > .05;  // a card before, or a new browser loading
+  if (prev && prev.kind === "capture" && fresh) {  // the screen dips out while the new browser loads
+    moveCam(v.t0 - .45, .45, AWAY);
+  }
+  if (fresh) {  // the screen comes in from the dark, with the app's first real frame
+    moveCam(v.t0 + beat.blank, 1.0, { autoAlpha: 1, scale: WIDE.s, x: 960 - WIDE.cx * WIDE.s, y: 540 - WIDE.cy * WIDE.s, ease: "power3.out" },
+            { autoAlpha: 0, scale: .62, x: 960 - 960 * .62, y: 540 - 540 * .62 + 90 });
+  } else {
+    camTo(v.t0, WIDE, 1.0);
+  }
+  if (v.t0 === s.visuals[0].t0) {  // a section of live footage opens: name it
+    productNo++;
+    tl.set(tag.querySelector("small"), { textContent: `${s.part} · ${productNo} of ${LIVE}` }, v.t0);
+    tl.set(tag.querySelector("b"), { textContent: s.title }, v.t0);
+    tl.fromTo(tag, { autoAlpha: 0, x: -30 }, { autoAlpha: 1, x: 0, duration: .5, ease: "power2.out", immediateRender: false }, v.t0 + .3);
+    tl.to(tag, { autoAlpha: 0, duration: .4 }, v.t0 + 3.6);
+  }
+  // the reply lands: frame it, with the ticket when it is in view
+  beat.lands.forEach((t) => {
+    const r = regionAt(beat, t + 1.0);
+    const box = r.note || (r.reply && r.ticket ? union(r.reply, r.ticket) : r.reply || r.ticket);
+    if (box && v.t0 + t < end - 1) camTo(v.t0 + t, fit(box, 50, 1.1), 1.3);
+  });
+  // what the narration points at, as it gets there. A reply is pointed at once it has landed: the
+  // next one to land when its words are spoken, if one is still coming. Anything else belongs to
+  // the footage on screen when its words are spoken (or, if that doesn't show it, the first that
+  // does), as soon as it is on screen, or once that next reply lands if the reply changes it.
+  // Either way, only once it holds still. A mark stays until the next one, the end of the
+  // footage, or the moment its region moves, whichever comes first.
+  const shows = (x, region) => x.kind === "capture" && W.beats[x.name].states.some(([, r]) => r[region]);
+  const lands = (x, at) => x.kind === "capture" && W.beats[x.name].lands.some((t) => x.t0 + t + .5 >= at);
+  const owner = ({ at, region }) => (region.startsWith("reply") && s.visuals.find((x) => lands(x, at)))
+    || s.visuals.find((x) => shows(x, region) && at >= x.t0 && at < x.t0 + x.dur) || s.visuals.find((x) => shows(x, region));
+  const mine = s.marks.map(([words, region, text]) => ({ words, at: cue(s, words), region, text }))
+    .filter((m) => owner(m).t0 === v.t0)
+    .sort((a, b) => a.at - b.at);
+  const landed = beat.lands.map((t) => v.t0 + t + .5);
+  const near = (a, b) => a && b && a.every((c, j) => Math.abs(c - b[j]) <= 6);
+  const settled = (from, region) => {  // [the first moment from `from` on that the region is on screen and holds still for 1 s, its box]
+    for (const [t, r] of beat.states.slice(Math.max(0, beat.states.findLastIndex(([u]) => v.t0 + u <= from)))) {
+      const at = Math.max(from, v.t0 + t);
+      if (r[region] && beat.states.every(([u, q]) => v.t0 + u <= at || v.t0 + u > at + 1 || near(q[region], r[region]))) return [at, r[region]];
+    }
+    return [Infinity];
+  };
+  let before = null;
+  mine.forEach((m, i) => {
+    const next = landed.find((t) => t >= m.at);
+    const changes = next !== undefined && !near(regionAt(beat, m.at - v.t0)[m.region], settled(next, m.region)[1]);
+    const from = m.region.startsWith("reply") || changes ? (next ?? m.at) : m.at;
+    const [at, box] = settled(Math.max(from, before ? before.at + 1.2 : 0), m.region);
+    if (at > end - .9) throw new Error(`${s.id}: '${m.region}' is not on screen and still after "${m.words}"`);
+    const moved = beat.states.find(([t, r]) => v.t0 + t > at && !near(r[m.region], box));
+    const until = Math.min(moved ? v.t0 + moved[0] : Infinity, end - .2);  // gone before the region moves
+    const spot = place(el("div", "spot", null, marks), box[0], box[1]);
+    Object.assign(spot.style, { width: box[2] - box[0] + "px", height: box[3] - box[1] + "px" });
+    const label = el("div", "label", esc(m.text), marks);
+    const right = (box[0] + box[2]) / 2 > 1150;
+    if (right) Object.assign(label.style, { right: 1920 - box[0] + 22 + "px", top: box[1] + "px" });
+    else if (box[3] + 90 < 1080) Object.assign(label.style, { left: box[0] + 14 + "px", top: box[3] + 18 + "px" });
+    else Object.assign(label.style, { left: box[0] + 14 + "px", top: box[1] - 76 + "px" });
+    gsap.set([spot, label], { autoAlpha: 0 });
+    if (before) tl.to(before.els, { autoAlpha: 0, duration: .3 }, Math.max(before.at + .7, Math.min(before.until, at) - .3));
+    tl.to(spot, { autoAlpha: 1, duration: .45 }, at);
+    tl.fromTo(label, { autoAlpha: 0, y: 12 }, { autoAlpha: 1, y: 0, duration: .4, ease: "back.out(2)", immediateRender: false }, at + .2);
+    camTo(at, fit(right ? [box[0] - 560, box[1], box[2], box[3]] : [box[0], box[1], box[2], box[3] + 90], 70, 1.22), 1.1);
+    if (i === mine.length - 1) tl.to([spot, label], { autoAlpha: 0, duration: .3 }, Math.max(at + .7, until - .3));
+    before = { at, until, els: [spot, label] };
+  });
+  if (!next || next.kind !== "capture") {  // back into the dark
+    moveCam(end - .7, .7, AWAY);
+  }
+});
+// the screen's entrances and exits keep their times, and a framing move waits for them to end;
+// then a framing move the next one starts before it gets halfway is dropped (the next one takes
+// over from where the camera is), and any other move is cut short to end as the next begins
+const toggles = (m) => "autoAlpha" in m.vars;
+moves.sort((a, b) => a.at - b.at);
+for (const e of moves.filter(toggles)) for (const m of moves) if (!toggles(m) && m.at >= e.at && m.at < e.at + e.d) m.at = e.at + e.d;
+moves.sort((a, b) => a.at - b.at).forEach((m, i) => {
+  const room = i + 1 < moves.length ? moves[i + 1].at - m.at : Infinity;
+  if (room < m.d / 2 && !toggles(m)) return;
+  const vars = { ...m.vars, duration: Math.min(m.d, room) };
+  if (m.from) tl.fromTo(cam, m.from, { ...vars, immediateRender: false }, m.at);
+  else tl.to(cam, vars, m.at);
+});
+
+/* ================================================================ scenes */
+const SCENES = {};
+
+SCENES.title = (s, v, c) => {
+  show(place(el("div", "eyebrow", "Foodics · AI Engineer take-home · Malek · October 2026", c), 120, 150), v.t0 + .3);
+  const a = place(el("div", "big", null, c), 120, 300);
+  words(a, "That film was scripted.", v.t0 + W.lead);
+  const b = show(place(el("div", "line", "Every ticket, rule and price in it came from <b>MenuMind's code</b>.", c), 124, 460, 1500), cue(s, "every ticket"));
+  const now = cue(s, "Here is the real app");
+  tl.to([a, b], { autoAlpha: 0, y: -50, duration: .55, ease: "power2.in" }, now - .2);
+  const n = place(el("div", "big bold", null, c), 120, 300);
+  words(n, "Now, the real app.", now + .3, .1);
+  show(place(el("div", "chip", "● live · gpt-5.4-mini", c), 124, 450), now + .9);
+  const live = cue(s, "on a live model");
+  show(place(el("div", "line", "It remembers what each customer <b>likes</b>", c), 124, 580), live + .5);
+  show(place(el("div", "line", "and what they <b>can't eat</b>,", c), 124, 632), live + .9);
+  show(place(el("div", "line", "and recommends from <b>real menu data</b>.", c), 124, 684), live + 1.3);
+};
+
+SCENES.brief = (s, v, c) => {
+  show(place(el("div", "eyebrow", "The brief · part one, the baseline", c), 120, 110), v.t0 + .2);
+  const rail = place(el("div", "rail", null, c), 100, 214, 1720);
+  tl.fromTo(rail, { scaleX: 0, transformOrigin: "0 50%" }, { scaleX: 1, duration: .8, ease: "power3.out" }, v.t0 + .2);
+  const asks = ["Understand the user", "Recommend menu items", "Long-term memory", "Evolving preferences", "Returning users", "Usable interface"];
+  const start = cue(s, "recommend from a real menu") - .6, stop = cue(s, "For my challenge") - .3;
+  const tickets = asks.map((a, i) => {
+    const t = place(el("div", "paper", `<div class="clip"></div><div class="n">2.${i + 1}</div><div style="margin-top:10px">${esc(a)}</div>`, c), 120 + i * 282, 228, 262);
+    t.style.height = "172px";
+    tl.fromTo(t, { autoAlpha: 0, y: -60, rotation: -4 }, { autoAlpha: 1, y: 0, rotation: [-1.2, .8, -.6, 1, -.9, .5][i], duration: .5, ease: "back.out(1.6)" },
+      start + i * (stop - start) / 6);
+    return t;
+  });
+  const pick = cue(s, "For my challenge");
+  show(place(el("div", "eyebrow", "Part two · choose your challenge", c), 120, 450), pick - .2);
+  const row = place(el("div", "abs", null, c), 120, 492, 1700);
+  Object.assign(row.style, { display: "flex", flexWrap: "wrap", gap: "14px" });
+  const options = ["Memory & personalization", "Restaurant integrations", "Scalability & performance", "User experience", "Voice interaction", "Reliability & evaluation"];
+  const chips = options.map((o, i) => {
+    const ch = el("div", "chip steel", esc(o), row);
+    ch.style.position = "static";
+    show(ch, pick + i * .12, .3, { y: 10 });
+    return ch;
+  });
+  const chose = cue(s, "I chose memory");
+  chips.forEach((ch, i) => i === 0
+    ? tl.to(ch, { backgroundColor: "#FF9447", color: "#161C21", boxShadow: "0 0 30px 6px rgba(255,148,71,.55)", duration: .4 }, chose)
+    : tl.to(ch, { opacity: .3, duration: .4 }, chose));
+  tickets.forEach((t, i) => (i === 2 || i === 3)
+    ? tl.to(t, { y: -10, boxShadow: "0 0 0 4px #FF9447, 0 0 44px 10px rgba(255,148,71,.5)", duration: .5 }, chose)
+    : tl.to(t, { opacity: .35, duration: .5 }, chose));
+  const big = place(el("div", "paper", `<small>My challenge · memory &amp; personalization</small><div style="font:700 70px/1.04 var(--display);margin-top:10px">Preferences that change over time</div><hr>`, c), 120, 610, 1420);
+  big.style.height = "330px";
+  tl.fromTo(big, { autoAlpha: 0, y: 70 }, { autoAlpha: 1, y: 0, duration: .7, ease: "power3.out" }, cue(s, "memory mistakes are the costly ones") - .3);
+  [["an allergy forgotten", "× An allergy forgotten"], ["a one-night wish kept forever", "× A one-night wish kept forever"],
+   ["an allergy dropped on a misread sentence", "× An allergy dropped on a misread sentence"]].forEach(([w, t], i) => {
+    const l = place(el("div", "abs", esc(t), big), 26, 172 + i * 44);
+    l.style.cssText += "font:600 30px/1.3 var(--mono);color:#C93A2B;";
+    show(l, cue(s, w), .35, { x: -16 });
+  });
+  stamp(big, "THE COSTLY ONES", cue(s, "memory mistakes are the costly ones") + .6, { red: true, x: 1010, y: 40, rot: -8, size: 40 });
+};
+
+SCENES.architecture = (s, v, c) => {
+  show(place(el("div", "eyebrow", "Part two · How it works", c), 120, 92), v.t0 + .2);
+  show(place(el("div", "head", "The model describes. Code decides.", c), 120, 130), v.t0 + .5);
+  const lanes = cue(s, "The model turns messages") - .4;
+  show(place(el("div", "eyebrow", "Language model · understands", c), 120, 310), lanes);
+  show(place(el("div", "eyebrow", "Code · decides", c), 120, 570), lanes + .3).style.color = "#8E9CA7";
+  const box = (cls, h, p, x, y) => place(el("div", "panel " + cls, `<h3>${h}</h3><p>${p}</p>`, c), x, y, 320);
+  const X = [110, 460, 810, 1160, 1510];
+  const ext = show(box("model", "Reads the message", "into typed claims", X[0], 350), cue(s, "turns messages into claims"));
+  const yn = show(box("model", "Reads a yes or no", "to the app's question", X[1], 350), cue(s, "turns messages into claims", .4));
+  const rep = show(box("model", "Writes the reply", "a message, and dish IDs", X[4], 350), cue(s, "writes the reply"));
+  const code = [["Decides", "11 ordered rules"], ["Event log", "append-only, per customer"], ["Profile", "computed from the log"],
+                ["Recommends", "allergies, diet filter; tastes rank"], ["Checks & renders", "names, prices from the menu"]];
+  const ats = [cue(s, "Code decides what is saved"), cue(s, "keeps every change in an event log"), cue(s, "keeps every change in an event log", .5),
+               cue(s, "filters the menu"), cue(s, "pick only verified dishes")];
+  const boxes = code.map(([h, p], i) => show(box("", h, p, X[i], 610), ats[i]));
+  [ext, yn, rep, ...boxes].forEach((b) => { b.style.height = "170px"; });
+  const svg = wires(c);
+  wire(svg, `M${X[0] + 260},520 L${X[0] + 260},610`, ats[0] + .2, .5);
+  for (let i = 0; i < 3; i++) wire(svg, `M${X[i] + 320},695 L${X[i + 1]},695`, ats[i + 1] + .1, .4, "steel");
+  wire(svg, `M${X[3] + 320},695 L${X[4]},695`, ats[4], .4, "steel");
+  const up = wire(svg, `M${X[3] + 160},610 C${X[3] + 160},560 ${X[4] + 60},580 ${X[4] + 100},520`, ats[4] + .1, .7);
+  wire(svg, `M${X[4] + 240},520 L${X[4] + 240},610`, ats[4] + .6, .5);
+  const dot = el("div", "dot", null, c);
+  gsap.set(dot, { autoAlpha: 0 });
+  tl.set(dot, { autoAlpha: 1 }, ats[4] + .9);
+  tl.to(dot, { motionPath: { path: up, align: up, alignOrigin: [.5, .5] }, duration: 1.2, ease: "power1.inOut" }, ats[4] + .9);
+  tl.to(dot, { autoAlpha: 0, duration: .3 }, ats[4] + 2.1);
+  const foot = show(place(el("div", "line", "The model never decides <b>what is stored</b>, or <b>what is recommended</b>.", c), 120, 840), ats[4] + 1.2);
+  foot.style.color = "#C9D1D7";
+};
+
+SCENES.conflict = (s, v, c) => {
+  show(place(el("div", "eyebrow", "One conflict, end to end", c), 120, 92), v.t0 + .2);
+  const ev = W.removal_turn, events = W.events, before = events.slice(0, -1), done = events[events.length - 1];
+  const rail = place(el("div", "rail", null, c), 100, 752, 1720);
+  show(rail, v.t0 + .3, .5, { scaleX: .2 });
+  const val = (e) => e.subject ?? JSON.parse(e.value ?? "null");
+  const mini = (e, i) => place(el("div", "mini" + (e.scope === "conversation" ? " tonight" : ""),
+    `<div class="seq">#${String(e.seq).padStart(4, "0")}</div><div class="op">${esc(e.operation)} ${esc(e.attribute)}</div>` +
+    `<div class="val">${esc(val(e))}</div><div class="meta">${e.scope === "conversation" ? "this conversation" : "every visit"}, ${esc(e.source)}</div>` +
+    `<div class="ev">“${esc(e.evidence.slice(0, 34))}${e.evidence.length > 34 ? "…" : ""}”</div>`, c), 120 + i * 238, 770);
+  const logAt = cue(s, "The hard case") + .8;
+  const minis = before.map((e, i) => { const m = mini(e, i); tl.fromTo(m, { autoAlpha: 0, y: -40 }, { autoAlpha: 1, y: 0, duration: .4, ease: "back.out(1.6)" }, logAt - 1.2 + i * .12); return m; });
+  const peanut = minis[before.findIndex((e) => e.attribute === "allergen" && e.subject === "peanut")];
+  tl.to(peanut, { boxShadow: "0 0 0 4px #FF9447, 0 0 40px 8px rgba(255,148,71,.5)", y: -8, duration: .5 }, logAt);
+  const said = place(el("div", "big", null, c), 120, 140);
+  said.style.fontSize = "84px";
+  const saidAt = cue(s, "Maya says she's no longer allergic");
+  gsap.set(said, { autoAlpha: 1 });
+  typeIn(said, `“${ev.say}”`, saidAt, .03);
+  const cl = ev.claims[0];
+  const slip = place(el("div", "slip", `${esc(cl.attribute)} − ${esc(cl.subject)}<small>from now on, ${esc(cl.modality)} · from the model</small>`, c), 120, 300);
+  show(slip, cue(s, "The model reads it"), .45, { y: -16 });
+  const no = cue(s, "can't write memory");
+  const svg = wires(c);
+  const bar = wire(svg, "M100,700 L1820,700", no - .3, .5, "red");
+  const barText = show(place(el("div", "eyebrow", "Only code writes to the log", c), 120, 662), no);
+  barText.style.color = "#FF8B7D";
+  tl.to(slip, { keyframes: [{ y: 330, duration: .55, ease: "power2.in" }, { y: 300, duration: .12 }, { y: 0, duration: .5, ease: "power2.out" }] }, no + .2);
+  tl.to(bar, { keyframes: [{ opacity: .3, duration: .08 }, { opacity: 1, duration: .1 }] }, no + .75);
+  const rule = cue(s, "Rule R10 asks first");
+  const sheet = place(el("div", "panel", "", c), 1020, 130, 800);
+  sheet.innerHTML = `<p style="color:#FF9447;letter-spacing:.18em;font-weight:600;margin-bottom:10px">MEMORY.PY · THE RULES</p><table class="rules">` +
+    [["R1–R2", "past or hypothetical", "ask, or no change"], ["R5", "a diet negated, none named", "ask what replaces it"], ["R6", "a taste: spice, budget, likes", "apply"],
+     ["R7–R9", "tightening an allergy or diet", "apply; if hedged, ask"], ["R10", "loosening, if hedged or an allergy", "ask first; nothing changes"],
+     ["R11", "a diet change that names the new one", "apply"]]
+      .map(([r, w, o]) => `<tr class="${r === "R10" ? "r10" : ""}"><td>${r}</td><td>${w}</td><td>${o}</td></tr>`).join("") + "</table>";
+  sheet.querySelector(".rules").style.position = "static";
+  show(sheet, rule - .2);
+  tl.set(sheet.querySelector(".r10"), { attr: { class: "r10 hl" } }, rule + .7);
+  const dec = ev.decisions[0];
+  const verdict = place(el("div", "chip", `${esc(dec.rule)} · ${esc(dec.outcome)}`, c), 1020, 560);
+  show(verdict, rule + 1.0);
+  const stays = cue(s, "so peanut stays enforced");
+  const still = place(el("div", "chip", "peanut · still enforced", c), 120 + 2 * 238, 715);
+  still.style.background = "#C93A2B"; still.style.color = "#fff";
+  show(still, stays, .4, { y: 10 });
+  tl.to(peanut, { keyframes: [{ scale: 1.06, duration: .2 }, { scale: 1, duration: .3 }] }, stays);
+  const tied = cue(s, "The question is bound");
+  tl.to([sheet, verdict], { autoAlpha: 0, x: 60, duration: .45 }, tied - .3);
+  const hold = place(el("div", "hold", `<div style="display:flex;justify-content:space-between;align-items:baseline"><span class="seq">#——</span><span class="meta">pending</span></div><hr>` +
+    `<b>REMOVE allergen</b><div class="val">peanut</div><div class="meta">maya · this conversation only<br>asked after event #${String(before[before.length - 1].seq).padStart(4, "0")}</div><hr>` +
+    `<div>“${esc(ev.question.split("?")[0])}?”</div>`, c), 1180, 130);
+  tl.fromTo(hold, { autoAlpha: 0, clipPath: "inset(0 0 100% 0)" }, { autoAlpha: 1, clipPath: "inset(0 0 0% 0)", duration: 1.0, ease: "steps(14)" }, tied);
+  stamp(hold, "HOLD", tied + 1.1, { red: true, x: 230, y: 30, rot: 8 });
+  const old = cue(s, "a stale yes is refused");
+  const yes = place(el("div", "slip", "yes <small>after peanut changed elsewhere</small>", c), 1180, 530);
+  tl.fromTo(yes, { autoAlpha: 0, x: 700 }, { autoAlpha: 1, x: 0, duration: .6, ease: "power3.out" }, old - .4);
+  stamp(yes, "REFUSED", old + .3, { red: true, loud: true, x: 120, y: -30, rot: -7, size: 44 });
+  const refusal = show(place(el("div", "line", "StaleConfirmation:<br>the preference changed after the question was asked", c), 1180, 630, 640), old + .5);
+  refusal.style.cssText += "font-size:22px;color:#FF8B7D;";
+  const confirm = cue(s, "Her yes appends");
+  tl.to([yes, refusal], { autoAlpha: 0, duration: .4 }, confirm - .4);
+  tl.to(hold, { autoAlpha: 0, y: 40, duration: .5 }, confirm);
+  const seven = mini(done, before.length);
+  tl.fromTo(seven, { autoAlpha: 0, x: 1180 - (120 + before.length * 238), y: -620 }, { autoAlpha: 1, x: 0, y: 0, duration: 1.1, ease: "power3.inOut" }, confirm + .3);
+  stamp(seven, "CONFIRMED", confirm + 1.5, { x: 6, y: 96, rot: -12, size: 30 });
+  tl.to(peanut, { boxShadow: "0 12px 24px rgba(0,0,0,.4)", y: 0, duration: .5 }, confirm);
+  tl.to(still, { autoAlpha: 0, duration: .3 }, confirm);
+  const kept = cue(s, "nothing is overwritten");
+  const scan = place(el("div", "abs", null, c), 100, 745);
+  Object.assign(scan.style, { width: "16px", height: "250px", borderRadius: "8px", background: "linear-gradient(180deg, transparent, rgba(255,200,150,1), transparent)", boxShadow: "0 0 40px 14px rgba(255,148,71,.45)" });
+  gsap.set(scan, { autoAlpha: 0 });
+  tl.set(scan, { autoAlpha: 1 }, kept);
+  tl.to(scan, { x: 1720, duration: 2.0, ease: "none" }, kept);
+  tl.set(scan, { autoAlpha: 0 }, kept + 2.0);
+  show(place(el("div", "line", "Append-only: <b>every change is a new ticket</b>; nothing is overwritten.", c), 120, 1000), kept + .4).style.fontSize = "28px";
+};
+
+SCENES.grounding = (s, v, c) => {
+  show(place(el("div", "eyebrow", "Grounded replies", c), 120, 92), v.t0 + .2);
+  show(place(el("div", "head", "The model picks by ID. Code writes the dish.", c), 120, 130), v.t0 + .4);
+  const picks = ["M9", "D3"];
+  const d = place(el("div", "draft", `<small>the reply model returns (structured output; the shape)</small>{"message": "…",\n "recommend": [${picks.map((id) => `<span class="tok" data-id="${id}">"${id}"</span>`).join(", ")}]}`, c), 120, 290);
+  show(d, cue(s, "the model returns dish IDs"));
+  const checks = [["every ID on the menu, and allowed for her", cue(s, "code checks them")], ["at most three dishes", cue(s, "code checks them", .5)],
+                  ["no dish name or price typed by the model", cue(s, "against her restrictions", .4)]];
+  checks.forEach(([t, at], i) => show(place(el("div", "check", `<i>✓</i>${esc(t)}`, c), 120, 470 + i * 50), at, .4, { x: -20 }));
+  const writes = cue(s, "writes names and prices from the menu");
+  const svg = wires(c);
+  const served = place(el("div", "paper", `<small>what the customer sees</small>`, c), 120, 660, 820);
+  show(served, writes - .3);
+  picks.forEach((id, i) => {
+    const it = MENU[id];
+    const card = place(el("div", "card", `<div class="name">${esc(it.name)}</div><div class="meta"><span class="price">${money(it.price)}</span>` +
+      `<span class="pips">${[1, 2, 3].map((n) => `<i class="${n <= ["none", "mild", "medium", "hot"].indexOf(it.spice) ? "on" : ""}"></i>`).join("")}</span><span>${esc(it.diet)}</span></div>`, c), 1400, 300 + i * 170);
+    show(card, writes - .6 + i * .2, .5, { x: 40 });
+    const tok = d.querySelectorAll(".tok")[i], at = writes + i * 1.3;
+    const a = { x: 120 + tok.offsetLeft + tok.offsetWidth / 2, y: 290 + tok.offsetTop }, b = { x: 1400, y: 300 + i * 170 + 70 };
+    const p = wire(svg, `M${a.x},${a.y} C${a.x + 250},${a.y - 260} ${b.x - 300},${b.y - 160} ${b.x},${b.y}`, at, .8);
+    tl.to(p, { opacity: 0, duration: .3 }, at + 2.2);
+    const tg = el("div", "tag", `${esc(it.name)} <span style="font:500 22px var(--mono)">${money(it.price)}</span>`, c);
+    gsap.set(tg, { autoAlpha: 0 });
+    tl.set(tg, { autoAlpha: 1 }, at + .9);
+    tl.to(tg, { motionPath: { path: p, align: p, alignOrigin: [.5, .5], start: 1, end: 0 }, duration: 1.0, ease: "power2.inOut" }, at + .9);
+    tl.set(tg, { autoAlpha: 0 }, at + 1.9);
+    const line = el("div", null, `<b style="font:700 40px/1.2 var(--display)">${esc(it.name)}</b> <span style="font-weight:600">${money(it.price)}</span>`, served);
+    show(line, at + 1.9, .35, { y: 10 });
+  });
+  const twice = cue(s, "Twice wrong");
+  const fb = place(el("div", "panel", `<h3>Broken twice?</h3><p>The app answers from verified data instead.</p>`, c), 1080, 700, 600);
+  show(fb, twice);
+  const closed = cue(s, "unreadable");
+  const fc = place(el("div", "panel", `<h3>Unreadable message?</h3><p>Nothing saved. Nothing recommended.</p>`, c), 1080, 870, 600);
+  show(fc, closed);
+  stamp(fc, "FAIL CLOSED", closed + .6, { red: true, loud: true, x: 330, y: -24, rot: -7, size: 38 });
+};
+
+SCENES.recipes = (s, v, c) => {
+  show(place(el("div", "eyebrow", "Menu data", c), 120, 92), v.t0 + .2);
+  show(place(el("div", "head", "Allergens are derived, then checked.", c), 120, 130), v.t0 + .4);
+  const rows = [];
+  const walk = (n, depth) => { rows.push({ n, depth }); (n.parts || []).forEach((p) => walk(p, depth + 1)); };
+  W.recipe.parts.forEach((p) => walk(p, 0));
+  const tree = place(el("div", "tree", null, c), 150, 300);
+  const build = cue(s, "every dish's allergens"), nest = cue(s, "recipes inside recipes");
+  rows.forEach(({ n, depth }, i) => {
+    const r = place(el("div", "row", `${"&nbsp;".repeat(depth * 4)}${depth ? "└ " : "• "}<span class="${n.house ? "h" : ""}">${esc(n.name)}</span>` +
+      (n.house ? ` <span style="font-size:21px;color:#8E9CA7">house recipe</span>` : "") + (n.allergens || []).map((a) => `<span class="al">${esc(a)}</span>`).join(""), tree), 0, i * 44);
+    show(r, build - .8 + i * ((nest - build + .6) / rows.length), .3, { x: -14 });
+    if (n.house) tl.to(r.querySelector(".h"), { textShadow: "0 0 18px rgba(255,148,71,.95)", color: "#FF9447", duration: .4 }, nest + .2 + depth * .3);
+  });
+  const derived = [...new Set(rows.flatMap(({ n }) => n.allergens || []))].sort();
+  const label = place(el("div", "paper", `<small>${esc(W.recipe.name)}</small><hr>Labelled: <b>${esc(W.recipe.allergens.join(", "))}</b><br>Derived: <b>${esc(derived.join(", "))}</b>`, c), 1150, 300, 650);
+  show(label, cue(s, "the menu only loads"));
+  const ok = place(el("div", "check", `<i>✓</i>they match, or the menu won't load`, c), 1150, 560);
+  show(ok, nest + 1.2);
+};
+
+SCENES.testing = (s, v, c) => {
+  show(place(el("div", "eyebrow", "Tests · no model calls", c), 120, 92), v.t0 + .2);
+  const n = place(el("div", "num lamp", "0<small>automated tests</small>", c), 120, 150);
+  show(n, v.t0 + .3);
+  count(n, W.tests, cue(s, "hundred and ninety-six"), 1.4);
+  ["memory rules", "menu filtering", "customer isolation"].forEach((t, i) => show(place(el("div", "chip steel", t, c), 120 + [0, 270, 545][i], 520), cue(s, "without a model", .3 + i * .35), .35, { y: 12 }));
+  const acc = cue(s, "an acceptance test over HTTP");
+  const lines = W.acceptance.split("\n");  // acceptance.py's PASS lines, as printed (build.py checks them)
+  const r = place(el("div", "paper", `<small>acceptance.py · over HTTP</small><hr>`, c), 1180, 150, 640);
+  show(r, acc - .2);
+  lines.forEach((l, i) => {
+    const [, word, name] = l.match(/^(PASS|FAIL)\s+(.*)$/);
+    const e = el("div", null, `<b style="color:${word === "PASS" ? "#2E7D4F" : "#B3261E"}">${word}</b>&nbsp; ${esc(name)}`, r);
+    e.style.cssText = "font-size:21px;line-height:1.5";
+    show(e, acc + .3 + i * .28, .2, { y: 6 });
+    if (/restart/.test(l)) tl.to(e, { backgroundColor: "rgba(255,148,71,.35)", duration: .3 }, Math.max(acc + .3 + i * .28, cue(s, "across a restart")));
+  });
+};
+
+SCENES.evidence = (s, v, c) => {
+  show(place(el("div", "eyebrow", "Evidence with the real model · gpt-5.4-mini · final run", c), 120, 92), v.t0 + .2);
+  const real = within(v, cue(s, "On the real model"), 2);
+  show(place(el("div", "head", "14 conversations × 3 runs", c), 120, 130), real);
+  const a = place(el("div", "num", "0<small>conversations<br>fully correct</small>", c), 120, 290);
+  a.style.fontSize = "210px";
+  show(a, within(v, cue(s, "all passed"), 2) - .2);
+  count(a, 42, within(v, cue(s, "all passed"), 2), 1.0, (x) => `${Math.round(x)}/42`);
+  const z = place(el("div", "num lamp", "0<small>unsafe recommendations<br>in 75 turns</small>", c), 760, 290);
+  z.style.fontSize = "210px";
+  show(z, within(v, cue(s, "no unsafe recommendation"), 2));
+  const h = place(el("div", "num", "10/10<small>hard restrictions caught<br>(8/8 saved)</small>", c), 1220, 290);
+  h.style.fontSize = "210px";
+  show(h, within(v, cue(s, "seventy-five turns", .8), 2));
+  const runs = [["Run 1", 34, 39], ["Run 2", 38, 39], ["Run 3", 39, 39], ["Run 4", 41, 42], ["Final", 42, 42]];
+  const bars = show(place(el("div", "bars", null, c), 120, 690), real + .2, .4);
+  bars.style.height = "260px";
+  runs.forEach(([x, k, n], i) => {
+    const b = el("div", "bar", `<div class="v">${k}/${n}</div><div class="fill" style="height:${Math.round(200 * k / n)}px"></div><div class="x">${x}</div>`, bars);
+    tl.fromTo(b.querySelector(".fill"), { scaleY: 0 }, { scaleY: 1, duration: .6, ease: "power3.out" }, real + .4 + i * .18);
+    show(b.querySelector(".v"), real + .8 + i * .18, .3);
+  });
+  show(place(el("div", "line", "Conversations fully correct, run by run, fixing what each found.", c), 860, 900, 960), real + 1.3).style.fontSize = "24px";
+  show(place(el("div", "line", "Counts from a limited test set, <b>not rates</b>.", c), 860, 820), within(v, cue(s, "A limited set"), 1.5)).style.fontSize = "28px";
+};
+
+SCENES.lessons = (s, v, c) => {
+  show(place(el("div", "eyebrow", "What the live runs caught", c), 120, 92), v.t0 + .2);
+  show(place(el("div", "head", "Read every run in full.", c), 120, 130), v.t0 + .3);
+  const rail = place(el("div", "rail", null, c), 100, 300, 1720);
+  show(rail, v.t0 + .4, .5, { scaleX: .2 });
+  const runs = [["Run 1", "“Nuts” saved as tree nuts only, 4 of 4", "nuts, none named: peanut too"],
+                ["Run 2", "replies called saved changes temporary", "the app writes what was saved"],
+                ["Run 3", "a new rule dropped a companion's allergy", "rule restated; run 4: 10/10"],
+                ["Run 4", "0 unsafe; misses left involve no allergy", "documented in the README"],
+                ["Filming", "the model claimed a removal before the yes", "the app asks its own questions"],
+                ["Final", "42 of 42 conversations fully correct", "0 unsafe in 75 turns"]];
+  const tk = runs.map(([r, found, fix], i) => {
+    const t = place(el("div", "paper", `<div class="clip"></div><div class="n">${r}</div><hr><div style="font-size:21px">${esc(found)}</div><hr><div style="font-size:19px;color:#2E5D4B">→ ${esc(fix)}</div>`, c), 114 + i * 284, 316, 264);
+    t.style.height = "330px";
+    tl.fromTo(t, { autoAlpha: 0, y: -50 }, { autoAlpha: .45, y: 0, duration: .45, ease: "back.out(1.6)" }, v.t0 + .6 + i * .15);
+    return t;
+  });
+  const lit = (i, at) => tl.to(tk[i], { opacity: 1, y: -10, boxShadow: "0 0 0 4px #FF9447, 0 0 44px 10px rgba(255,148,71,.5)", duration: .45 }, at);
+  lit(0, cue(s, "they caught"));
+  lit(2, cue(s, "a rule of mine"));
+  stamp(tk[2], "CAUGHT", cue(s, "dropped a companion's allergy", .4), { red: true, x: 50, y: 240, rot: -10, size: 40 });
+  const fixed = cue(s, "Each was fixed");
+  stamp(tk[0], "FIXED", fixed, { x: 70, y: 240, rot: -10, size: 40 });
+  [1, 3, 4, 5].forEach((i, k) => lit(i, fixed + .4 + k * .25));
+  show(place(el("div", "line", "Rerun after every change. Read every reply. <b>Don't trust one good run.</b>", c), 120, 760), fixed + .6);
+};
+
+SCENES.tradeoffs = (s, v, c) => {
+  show(place(el("div", "eyebrow", "Scope & trade-offs", c), 120, 92), v.t0 + .2);
+  show(place(el("div", "head", "Choosing what not to build.", c), 120, 130), v.t0 + .4);
+  const col = (cls, title, at, x) => {
+    const p = place(el("div", "panel " + cls, `<h3>${title}</h3>`, c), x, 300, 540);
+    p.style.minHeight = "420px";
+    show(p, at);
+    return p;
+  };
+  const item = (p, text, at, color = "#C9D1D7") => {
+    const e = el("p", null, esc(text), p);
+    e.style.cssText = `margin-top:18px;font-size:26px;color:${color}`;
+    show(e, at, .35, { x: -12 });
+  };
+  const out = col("", "Left out, on purpose", cue(s, "What I left out"), 120);
+  item(out, "learning preferences from behaviour", cue(s, "learning preferences"));
+  item(out, "a clock for “tonight”", cue(s, "a clock for"));
+  item(out, "running on several servers", cue(s, "running on several servers"));
+  const no = col("model", "Rejected", cue(s, "I rejected"), 690);
+  item(no, "the model writing memory directly", cue(s, "I rejected", .3), "#FFD2AE");
+  item(no, "nothing it saved could be audited", cue(s, "could be audited"), "#8E9CA7");
+  stamp(no, "REJECTED", cue(s, "I rejected", .8), { red: true, loud: true, x: 250, y: 300, rot: -8, size: 44 });
+  const more = col("", "With more time", cue(s, "With more time"), 1260);
+  item(more, "one transaction per message", cue(s, "one transaction"));
+  item(more, "concurrency control for more servers", cue(s, "concurrency control"));
+  item(more, "verified supplier recipes", cue(s, "verified supplier recipes"));
+};
+
+SCENES.close = (s, v, c) => {
+  show(place(el("div", "eyebrow", "What it guarantees: narrow, and strong", c), 120, 150), Math.max(v.t0 + .3, cue(s, "The guarantee is narrow")));
+  const a = place(el("div", "big bold", null, c), 116, 200);
+  a.style.fontSize = "150px";
+  words(a, "The model can describe.", Math.max(v.t0 + .5, cue(s, "the model can describe")), .1);
+  const b = place(el("div", "big bold", null, c), 116, 360);
+  b.style.cssText += "font-size:150px;color:#FF9447;";
+  words(b, "Code decides.", cue(s, "code decides"), .14);
+  const thanks = cue(s, "Thank you");
+  const rule = place(el("div", "abs", null, c), 120, 620);
+  Object.assign(rule.style, { width: "1680px", height: "2px", background: "#34414B" });
+  show(rule, thanks - .3, .5, { scaleX: 0 });
+  show(place(el("div", "head", "MenuMind", c), 120, 660), thanks).style.fontSize = "110px";
+  show(place(el("div", "line", "Thank you for watching.", c), 124, 790), thanks + .3);
+  const rows = [["Source", W.repo], ["Run it", "the README’s “Run it” · model gpt-5.4-mini"],
+                ["Live app", `${W.url} · no model key: chat runs locally`]];
+  rows.push(["Narration", "a synthetic voice (Kokoro-82M), generated locally"]);
+  rows.forEach(([k, val], i) => show(place(el("div", "line", `<span style="color:#FF9447">${esc(k)}</span>&nbsp;&nbsp;${esc(val)}`, c), 900, 680 + i * 50), thanks + .6 + i * .25).style.fontSize = "26px");
+};
+
+flat.forEach((v) => {
+  if (v.kind !== "card") return;
+  if (!SCENES[v.name]) throw new Error(`no scene "${v.name}"`);
+  SCENES[v.name](v.s, v, scene(v));
+});
+
+/* ================================================================ clock */
+tl.to(bokeh, { x: -160, y: 30, duration: W.duration, ease: "none" }, 0);
+tl.fromTo("#black", { autoAlpha: 0 }, { autoAlpha: 1, duration: .9, ease: "power1.in" }, W.duration - .9);  // the end
+tl.to({}, { duration: .01 }, W.duration);
+tl.progress(1).progress(0);
+const grain = $("#grain");
+async function seek(t) {
+  tl.seek(t, false);
+  const f = Math.floor(t * 24);
+  grain.style.backgroundPosition = `${(f * 73) % 256}px ${(f * 151) % 256}px`;
+  const v = captures.find((x) => t >= x.t0 && t < x.t0 + x.dur) || captures.filter((x) => x.t0 <= t).pop() || captures[0];
+  const frames = W.beats[v.name].frames, local = Math.max(0, t - v.t0);
+  let src = frames[0][1];
+  for (const [ft, f2] of frames) { if (ft <= local) src = f2; else break; }
+  if (shot.dataset.src !== src) { shot.dataset.src = src; shot.src = src; await shot.decode(); }
+}
+window.__film = { duration: W.duration, seek };
+await seek(0);
+document.body.dataset.ready = "1";
+})();
+</script>
+</body>
+</html>
