@@ -1,6 +1,6 @@
 # MenuMind audit
 
-> Follow-up: MM-005 independently verified fixed; MM-117 is a newly reproduced CRITICAL concurrency defect. See the final section for current totals and verification limits.
+> Current follow-up: MM-005 and the reported MM-117 interleaving are independently verified fixed. MM-118 identifies mismatched submission evidence. Earlier sections retain historical findings; see the final verification section for current evidence and limits.
 
 Status: complete (2026-10-14). 28 files × 10 categories = 280 cells, every one reviewed. 116 findings (13 high, 37 medium, 66 low); 24 fixed in this pass, 1 partly fixed, 1 kept by design, 90 open. Full evidence, reproductions and fixes for each finding are in [AUDIT_findings.json](AUDIT_findings.json).
 
@@ -303,3 +303,38 @@ Confirmed by the lead with the same interleaving (in memory, two conversations f
 **Proof:** `test_a_reply_honours_an_allergy_saved_while_it_was_written` reproduces the interleaving; it fails on the previous agent.py and passes now (197 passed). The repro now returns peanut-free dishes with `fallback: true`. The Spike's recorded test count, the README and the walkthrough narration now say 197.
 
 Totals: 117 findings (1 critical, 13 high, 37 medium, 66 low); 90 open, 25 fixed, 1 partly fixed, 1 by design.
+
+
+## Submission-handoff verification — 2026-10-14
+
+This is a focused follow-up, not a new exhaustive audit. **MM-117 is independently verified fixed for its reported interleaving:** the original two-conversation reproduction now returns S1/D3/S2 with `fallback: true`, avoiding peanut after it is saved. **197 tests passed in 1.97s.** Earlier statements that MM-117 remained open describe the earlier source revision.
+
+### MM-118 | Category 9 | HIGH | CONFIRMED | effort S
+
+**The submitted evaluation reports do not support the README's final-run figures.**
+
+- `README.md:234`: `| Conversations, turns fully correct | 42/42, 75/75 |`.
+- `evidence/eval_report_conversations_gpt-5.4-mini.json:5`: `"cases_correct": 41,`; line 7: `"turns_correct": 74,`; line 11: `"reply_rejected_at_least_once": 1,`. Recomputing the result from its rows gives 41/42. The failed row is req4-spice-update, repeat 2: `durable spice_tolerance is None, expected 'none'`.
+- `README.md:237-238` claims extractor accuracies 0.938/0.781 and classifier accuracy 18/18. The tracked extractor report contains 0.969/0.812 and classifier accuracy 0.944 (17/18).
+
+**Falsification:** the README explicitly distinguishes run 4 from the final run. The root `eval_report_conversations_gpt-5.4-mini.json` does contain 42/42 and 75/75; the root extractor report also matches the README's final figures. These root reports are ignored by Git. Both files in `evidence/` are tracked and contain different results. Thus the final run is not alleged to be invented; its evidence is missing from the proposed submission. The pasted five-file staging command does not repair this mismatch.
+
+**Minimal trigger:** clone the current GitHub revision and compare the README figures with the two reports under `evidence/`. **Proposed fix:** publish and clearly label the final reports, preserve older runs under distinct names if retained, and bind each README number to the intended report. Source/report SHA256 values are recorded in the JSON finding.
+
+**Other verified handoff facts:** GitHub HEAD is `05876ef1896faacbc9b30d936d22d0481d0628a4`; run.py is still untracked and four named documentation/video-page files are modified. Health returned `ok: true` and `chat_enabled: true`; Railway listed menumind-volume mounted at `/data`, Ready. These do not establish live model-call success or continuity throughout the review period. Menu counts match: 19 dishes, 3 categories, 12 prices, 4 diets, 4 spice levels, 18 dishes sharing ingredients. MP4 probe: 409.6 seconds, 69,695,018 bytes. The assignment recommends 8–12 minutes; 6:49.6 is shorter, but the recommendation is not a mandatory minimum.
+
+**Remaining isolation defect:** MM-004 still reproduces in the actual page script with a minimal DOM and controlled fetch promises: a delayed Alice reply is rendered into Bob's page. `static/index.html:363-364` executes `add("agent", html); renderTicket(r.profile, r.question);` without checking the current account/conversation against the request. This is a Node reproduction, not a fresh full-browser test.
+
+**Limits:** a common-pattern secret scan of the 46 intended working-tree files found no matches; this is not a comprehensive secret/history audit. Drive permissions, actual live chat, a fresh-machine run.py installation, and the complete final video were not verified. No commit, push, upload, source edit, or evidence replacement was performed.
+
+## MM-118 fixed — 2026-10-14
+
+Confirmed: `evidence/` held run 4's reports (41/42) while the README quoted the final run (42/42); the final reports existed only as gitignored copies at the repository root. `evidence/` now holds the final run's reports, and run 4's are kept as `evidence/run4-*.json`. Every figure in the README's evidence table was recomputed from `evidence/`. All match except "turns that ask a question, answered by the app alone": the final run shows **9 of 12**, not 12 of 12. The 3 others are the re-asks after "not sure", where the model's offer of a dish sat above the question (MM-005, fixed after the run). The README now says 9 of 12 (MM-057, partly fixed), names the report files, and says the app changed after the run, which was not repeated.
+
+Totals: 118 findings; 89 open, 26 fixed, 2 partly fixed, 1 by design.
+
+## MM-004 fixed — 2026-10-14
+
+The chat page now records the conversation and the signed-in customer when a message is sent, and drops a reply (or an error) that comes back after either changed. Checked in a real browser (Playwright, the app with its scripted model): with Alice's reply held in flight while she signed out and Bob signed up, her reply and allergy appeared on Bob's page before the fix and do not after; Bob's own replies still appear. Removed from the README's known issues.
+
+Totals: 118 findings; 88 open, 27 fixed, 2 partly fixed, 1 by design.

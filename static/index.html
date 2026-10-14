@@ -348,9 +348,13 @@ $("composer").addEventListener("submit", async (e) => {
   $("message").value = "";
   add("user", `<p>${esc(text)}</p>`);
   const typing = add("agent typing", "<p>Thinking…</p>");
+  // a reply that comes back after "New conversation", a sign-out or another sign-in is dropped:
+  // it belongs to a conversation, or a customer, no longer on screen
+  const sent = conversationId, who = me, gone = () => conversationId !== sent || me !== who;
   try {
     const r = await api("/api/chat", { method: "POST", body: { conversation_id: conversationId, message: text } });
     typing.remove();
+    if (gone()) return;
     let html = format(r.reply);
     const t = r.trace || {};
     const lines = [];
@@ -364,6 +368,7 @@ $("composer").addEventListener("submit", async (e) => {
     renderTicket(r.profile, r.question);
   } catch (err) {
     typing.remove();
+    if (gone()) return;
     if (err.status === 401) { showAuth(); return; }
     if (err.status === 404) {  // the conversation ended while idle
       await startConversation(true).catch(() => {});

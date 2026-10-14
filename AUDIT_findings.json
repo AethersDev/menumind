@@ -26,19 +26,19 @@
       "finding": 128,
       "n/a": 18
     },
-    "findings": 117,
+    "findings": 118,
     "reported_by_auditors": 119,
     "merged_duplicates": 3,
     "by_severity": {
-      "high": 13,
+      "high": 14,
       "medium": 37,
       "low": 66,
       "critical": 1
     },
     "by_status": {
-      "open": 90,
-      "fixed": 25,
-      "partly fixed": 1,
+      "open": 88,
+      "fixed": 27,
+      "partly fixed": 2,
       "by design": 1
     },
     "plausible_only": 11,
@@ -3884,10 +3884,11 @@
       "verdict": "confirmed",
       "verification": "Code read by the lead: the reply handler has no conversation guard and 'New conversation' stays enabled while a turn is in flight.",
       "fix": "Capture `const cid = conversationId` before the request and, after the await (success and error paths), return without rendering if `cid !== conversationId`; or disable New conversation and Sign out while busy.",
-      "status": "open",
+      "status": "fixed",
       "sources": [
         "A3 #1"
-      ]
+      ],
+      "fix_applied": "static/index.html: the chat handler records the conversation and the signed-in customer when a message is sent, and drops a reply (or an error) that comes back after either changed. Checked in a real browser (Playwright, the app with its scripted model): Alice's reply held in flight while she signs out and Bob signs up reached Bob's page before the fix (her reply and allergy shown) and does not after; Bob's own replies still appear. 197 passed."
     },
     {
       "id": "MM-005",
@@ -4906,10 +4907,11 @@
       "verdict": "confirmed",
       "verification": "Auditor's reproduction (see 'reproduction').",
       "fix": "Add a summary field counting turns whose decisions include confirm/clarify/apply+confirm and whose reply has no model text.",
-      "status": "open",
+      "status": "partly fixed",
       "sources": [
         "A4 #11"
-      ]
+      ],
+      "fix_applied": "The README figure is corrected to 9 of 12, recomputed from evidence/; no code in the repository computes it yet."
     },
     {
       "id": "MM-058",
@@ -6023,7 +6025,43 @@
         }
       ],
       "source_sha256": "ad1b6288cc5325f83ebe95ebe6dc471764b00b51020bfc42e6c4cdb82ea64450",
-      "fix_applied": "agent.py: after the reply model returns, the turn re-reads the profile under the same lock as memory writes; if what is enforced changed, the model's picks are re-checked against the current recommendations (check_reply) and, if they fail, the reply is built from verified current data (fallback_reply); the reply, its dishes and the returned profile all answer to that state. Regression test test_a_reply_honours_an_allergy_saved_while_it_was_written (the two-conversation interleaving above) fails on the previous agent.py and passes now; the in-memory repro returns peanut-free dishes, fallback true. 197 passed. The Spike's recorded test count and the walkthrough's narration were updated to 197."
+      "fix_applied": "agent.py: after the reply model returns, the turn re-reads the profile under the same lock as memory writes; if what is enforced changed, the model's picks are re-checked against the current recommendations (check_reply) and, if they fail, the reply is built from verified current data (fallback_reply); the reply, its dishes and the returned profile all answer to that state. Regression test test_a_reply_honours_an_allergy_saved_while_it_was_written (the two-conversation interleaving above) fails on the previous agent.py and passes now; the in-memory repro returns peanut-free dishes, fallback true. 197 passed. The Spike's recorded test count and the walkthrough's narration were updated to 197.",
+      "independent_current_verification": {
+        "status": "verified_fixed_for_reported_interleaving",
+        "agent_sha256": "8c6008b889d3f97c9c81ded6340dc849bf76faf57d507977394837edd24345f1",
+        "test_result": "197 passed; original interleaving returns peanut-free fallback"
+      }
+    },
+    {
+      "id": "MM-118",
+      "file": "README.md",
+      "line": 234,
+      "category": 9,
+      "category_name": "API contracts / published evidence contract",
+      "severity": "high",
+      "title": "Tracked evaluation evidence is from a different run than the README and submission claim",
+      "evidence": "README.md:234: | Conversations, turns fully correct | 42/42, 75/75 |. evidence/eval_report_conversations_gpt-5.4-mini.json:5: \"cases_correct\": 41, and :7: \"turns_correct\": 74, and :11: \"reply_rejected_at_least_once\": 1. README.md:237-238 claims extractor accuracies 0.938/0.781 and classifier 18/18; tracked extractor report instead has 0.969/0.812 and classifier accuracy 0.944.",
+      "failure": "A GitHub reviewer cannot reproduce the advertised final-run numbers from the submitted evidence. Both tracked JSON reports are different runs. The matching final reports are local ignored root files, excluded by the proposed git-add command.",
+      "reproduction": "Parse both evidence/*.json reports and the corresponding root eval_report*.json files. Recompute cases_correct directly from conversation rows: tracked 41/42 versus root 42/42. git check-ignore eval_report_conversations_gpt-5.4-mini.json confirms exclusion.",
+      "verdict": "confirmed",
+      "verification": "Read the README run history and both pairs of reports, recalculated the conversation count, and checked Git tracking/ignore rules. The root final reports exist, so this is a packaging mismatch, not a claim that the final run was fabricated.",
+      "falsification": "README distinguishes run 4 (41/42) from final (42/42). The final root report agrees with its final table. The tracked evidence files do not; the five files named in the pasted git-add command omit both reports.",
+      "fix": "Publish the correct final reports with explicit run labels and provenance; retain the earlier reports under historical filenames if useful. Point each README figure at its corresponding run. Verify the staged reports before pushing.",
+      "effort": "S",
+      "status": "fixed",
+      "sources": [
+        "Independent submission-handoff verification, 2026-10-14"
+      ],
+      "source_sha256": {
+        "agent.py": "8c6008b889d3f97c9c81ded6340dc849bf76faf57d507977394837edd24345f1",
+        "test_app.py": "a2696c3ecdee0f43065a6c27a84f90cb0acc7bb03b882ce83561b984a3bb1e12",
+        "README.md": "e159eacd74256224912a7acbcdcc60dee36b2fa169476b4d2a24101f4aeee206",
+        "evidence/eval_report_conversations_gpt-5.4-mini.json": "5e80e130350272f2aa99c53c84d80678e66d10e3b1bf6f3476716c737269e29f",
+        "evidence/eval_report_gpt-5.4-mini.json": "a0fba66f87e511c0b8e025503de317f9a7285f2a4e081ff97381c04822a127cc",
+        "eval_report_conversations_gpt-5.4-mini.json": "f01e1104ba0623296e743937433b4bad2b07d9898548a3409ca02f55171348eb",
+        "eval_report_gpt-5.4-mini.json": "b84f07bbff247f4e09ec5684e87f3d6025cd55077005f2b1113f5f5d4e8da479"
+      },
+      "fix_applied": "evidence/ now holds the final run's reports (copied from the gitignored root copies, 13 Oct 19:37 and 19:40); run 4's are kept as evidence/run4-*.json. Every figure in the README's evidence table was recomputed from evidence/: all match except 'answered by the app alone', which the final run shows as 9 of 12 (the 3 re-asks under the model's offer, the MM-005 defect), so the README now says 9 of 12. The README names the report files and says the app changed after the run, which was not repeated."
     }
   ],
   "independent_verifications": [
@@ -6078,6 +6116,43 @@
       },
       "limits": [
         "No live model calls. Picks are re-checked only when the enforced profile changed during the turn."
+      ]
+    },
+    {
+      "date": "2026-10-14",
+      "scope": "Submission handoff claims; not a fresh exhaustive audit",
+      "source_sha256": {
+        "agent.py": "8c6008b889d3f97c9c81ded6340dc849bf76faf57d507977394837edd24345f1",
+        "test_app.py": "a2696c3ecdee0f43065a6c27a84f90cb0acc7bb03b882ce83561b984a3bb1e12",
+        "README.md": "e159eacd74256224912a7acbcdcc60dee36b2fa169476b4d2a24101f4aeee206",
+        "evidence/eval_report_conversations_gpt-5.4-mini.json": "5e80e130350272f2aa99c53c84d80678e66d10e3b1bf6f3476716c737269e29f",
+        "evidence/eval_report_gpt-5.4-mini.json": "a0fba66f87e511c0b8e025503de317f9a7285f2a4e081ff97381c04822a127cc",
+        "eval_report_conversations_gpt-5.4-mini.json": "f01e1104ba0623296e743937433b4bad2b07d9898548a3409ca02f55171348eb",
+        "eval_report_gpt-5.4-mini.json": "b84f07bbff247f4e09ec5684e87f3d6025cd55077005f2b1113f5f5d4e8da479"
+      },
+      "verified_fixed": [
+        "MM-117"
+      ],
+      "new_confirmed": [
+        "MM-118"
+      ],
+      "test_run": "197 passed in 1.97s; no live model calls",
+      "race_repro": "Original two-conversation threading.Event trigger now returns S1/D3/S2, fallback true, current allergen peanut.",
+      "remaining_repro": "MM-004 reproduced again with current page script in Node: Bob ticket displays Alice allergy and reply.",
+      "external_reads": {
+        "health": {
+          "ok": true,
+          "chat_enabled": true,
+          "started_at": "2026-10-14T07:48:51.982187+00:00"
+        },
+        "github_HEAD": "05876ef1896faacbc9b30d936d22d0481d0628a4",
+        "railway_volume": "menumind-volume, production, /data, Ready"
+      },
+      "secret_scan": "46 intended working-tree files, common private-key/OpenAI/Anthropic/AWS/GitHub-token patterns, zero matches; not an exhaustive secret or Git-history scan.",
+      "limits": [
+        "No live chat or Drive permissions tested.",
+        "No clean-machine execution of run.py.",
+        "Video duration and size probed; complete final MP4 not watched."
       ]
     }
   ]

@@ -724,10 +724,14 @@ SCENES.close = (s, v, c) => {
   show(rule, thanks - .3, .5, { scaleX: 0 });
   show(place(el("div", "head", "MenuMind", c), 120, 660), thanks).style.fontSize = "110px";
   show(place(el("div", "line", "Thank you for watching.", c), 124, 790), thanks + .3);
-  const rows = [["Source", W.repo], ["Run it", "the README’s “Run it” · model gpt-5.4-mini"],
-                ["Live app", `${W.url} · no model key: chat runs locally`]];
-  rows.push(["Narration", "a synthetic voice (Kokoro-82M), generated locally"]);
-  rows.forEach(([k, val], i) => show(place(el("div", "line", `<span style="color:#FF9447">${esc(k)}</span>&nbsp;&nbsp;${esc(val)}`, c), 900, 680 + i * 50), thanks + .6 + i * .25).style.fontSize = "26px");
+  const rows = [["Source", W.repo], ["Run it", "python3 run.py, with your key · model gpt-5.4-mini"],
+                ["Live app", W.url], ["Narration", "a synthetic voice (Kokoro-82M), generated locally"]];
+  rows.forEach(([k, val], i) => {
+    const line = place(el("div", "line", `<span style="color:#FF9447">${esc(k)}</span>&nbsp;&nbsp;${esc(val)}`, c), 900, 680 + i * 50);
+    Object.assign(line.style, { fontSize: "26px", whiteSpace: "nowrap" });
+    if (900 + line.offsetWidth > 1880) throw new Error(`closing card: "${k}" is too long to fit`);  // rows are 50 px apart
+    show(line, thanks + .6 + i * .25);
+  });
 };
 
 flat.forEach((v) => {

@@ -12,6 +12,28 @@ is never removed without a confirmed yes, and a diet only loosens when the custo
 new one. The model's own sentences are checked only in part (see limitations). The demo serves
 the menu of a fictional restaurant, Lantern Street Kitchen.
 
+## The challenge: memory that changes safely
+
+- **Problem.** In food, memory mistakes are the costly ones: an allergy forgotten, a one-night
+  wish kept forever, an allergy dropped because a sentence was misread. A model that writes
+  its own memory makes each of these possible and leaves nothing to audit.
+- **Why this one.** Memory and changing preferences are the brief's core (2.3, 2.4) and the
+  place where a wrong answer can hurt a customer. Voice, scale or integrations would make the
+  assistant faster or wider, not safer, so I chose memory over them.
+- **What I built.** The model only describes what was said, as typed claims. Eleven ordered
+  rules in code decide what is saved, asked or ignored (`SPEC.md` §5); every change is an
+  append-only event; "tonight" lasts one conversation; an allergy is removed only after a yes
+  to the app's own question, bound to that conversation; replies may only recommend dishes
+  code has verified.
+- **Left out on purpose.** Learning preferences from behaviour, a clock for "tonight", and
+  running on several servers. Rejected: letting the model write memory directly, because
+  nothing it saved could be audited. With more time: one transaction per message, concurrency
+  control for several servers, and verified supplier recipes.
+- **Validation.** 197 tests with no model calls; an acceptance test over HTTP across a server
+  restart (15 of 15 checks); live runs on `gpt-5.4-mini` (42 of 42 conversations fully correct,
+  no unsafe recommendation in 75 turns; see "Evidence with a real model"); and a review of
+  every file (`AUDIT.md`), whose open issues are listed under limitations.
+
 ## Architecture
 
 - **The LLM interprets natural language.** It turns a message into typed preference claims,
@@ -38,7 +60,7 @@ You need Python 3.11 or newer and an OpenAI API key. The backend is FastAPI; mem
 SQLite file, created on first start. Tested on macOS with Python 3.13.
 
 ```bash
-git clone <repository-url> menumind
+git clone https://github.com/AethersDev/menumind menumind
 cd menumind
 python3 run.py                          # Windows: py run.py
 ```
@@ -59,8 +81,10 @@ export OPENAI_API_KEY="your-api-key"   # Windows PowerShell: $env:OPENAI_API_KEY
 uvicorn server:app --port 8000
 ```
 
-The hosted copy, <live-url>, runs without a model key: open it to sign up and look around,
-but chatting needs a key, so run MenuMind locally as above to try the model.
+The hosted copy, https://menumind-production-4958.up.railway.app, runs the same app on gpt-5.4-mini: sign up with any
+username (3 to 32 lowercase letters, digits, `.`, `_` or `-`) and a 4 to 12 digit PIN, and
+chat. Use test details, not real personal data. It is shared and capped (300 messages a day in
+total, 30 per customer per 10 minutes), so for a longer session run it locally as above.
 
 **Model: `gpt-5.4-mini`** (OpenAI, Chat Completions), for every model call. It is the
 default, so there is nothing to set: `LLM_PROVIDER` defaults to `openai`, and the OpenAI
@@ -104,7 +128,7 @@ the walkthrough video, with `gpt-5.4-mini`; the right column is the brief's requ
 | 8 | "yes" | "Every visit: no longer avoiding peanut." Nothing else changes | 4 |
 | 9 | In a private window, create a second account | An empty ticket: nothing from the first customer | 5 |
 
-Requirement 6, the interface, is this page; the hosted copy serves it without a key. Also
+Requirement 6, the interface, is this page; the hosted copy serves it too. Also
 worth trying: "I think I might be allergic
 to shellfish" (avoided now, and the app asks whether to save it), "I'm allergic to nuts"
 (saved as both peanut and tree nut), and "Actually, I'm still allergic to peanuts" while a
@@ -159,7 +183,10 @@ want, I can suggest something from the menu." just above it (3 of 3 in the final
 | `eval_extractor.py`, `extractor_cases.json`, `confirmation_cases.json` | Model evaluation: extractor and yes/no classifier |
 | `eval_conversations.py`, `conversation_cases.json` | Model evaluation: whole conversations through the app |
 | `acceptance.py` | End-to-end acceptance test of a running server, over HTTP |
-| `video/` | The walkthrough: script (`sections.py`), real-app capture (`capture.py`), the film page it is rendered from (`walkthrough/`) and the build, which narrates it with a local synthetic voice and checks the narration against the script by transcribing it back. Its cold open, "The Spike" (`spike/`), is a short film whose data is recorded by running this code on a scripted conversation (`spike_trace.py`), every frame rendered in 3D in Blender (`spike3d.py`, `spike_render.py`) |
+| `evidence/` | Raw reports of the final live run, behind the numbers in "Evidence with a real model", and of run 4 (`run4-*`) |
+| `AUDIT.md`, `AUDIT_findings.json` | Review of every file: each finding with its reproduction, what was fixed, what is open |
+| `Dockerfile`, `.dockerignore`, `requirements.txt`, `.env.example`, `pytest.ini` | The hosted image, dependencies, every setting with its default, test configuration |
+| `video/` | The walkthrough: script (`sections.py`; `narration.md` and `storyboard.md` are the generated script and timeline), real-app capture (`capture.py`), the film page it is rendered from (`walkthrough/`) and the build, which narrates it with a local synthetic voice and checks the narration against the script by transcribing it back. Its cold open, "The Spike" (`spike/`), is a short film whose data is recorded by running this code on a scripted conversation (`spike_trace.py`), every frame rendered in 3D in Blender (`spike3d.py`, `spike_render.py`) |
 | `fake_llm.py`, `preview.py` | Scripted model for tests and key-free preview |
 
 ## Tests and evaluation
@@ -194,8 +221,13 @@ saved change temporary, and latency. It keeps every reply in the JSON report for
 
 ## Evidence with a real model
 
-Measured on 2026-10-13 on the code in this commit, with `gpt-5.4-mini` (OpenAI, Chat
-Completions) for every model call: `eval_extractor.py`, then `eval_conversations.py --repeats 3`.
+Measured on 2026-10-13 with `gpt-5.4-mini` (OpenAI, Chat Completions) for every model call:
+`eval_extractor.py`, then `eval_conversations.py --repeats 3`. The raw reports are
+`evidence/eval_report_gpt-5.4-mini.json` (extractor and yes/no classifier) and
+`evidence/eval_report_conversations_gpt-5.4-mini.json` (conversations); run 4's are kept as
+`evidence/run4-*.json`. The app has changed since this run: the fix in the table's last row,
+and a re-check of each reply against memory saved meanwhile in another tab, which these
+one-at-a-time runs never trigger. The run was not repeated after them.
 
 | What | Result |
 |---|---|
@@ -206,7 +238,7 @@ Completions) for every model call: `eval_extractor.py`, then `eval_conversations
 | Restrictions saved that nobody stated | 0 |
 | Conversations, turns fully correct | 42/42, 75/75 |
 | Fallback replies (model output unusable twice), model replies rejected | 0, 0 |
-| Turns that ask a question, answered by the app alone | 12 of 12 |
+| Turns that ask a question, answered by the app alone | 9 of 12 (the 3 others asked again after "not sure", under the model's offer of a dish; fixed after this run) |
 | Extractor decision accuracy, exact claims | 0.938, 0.781 |
 | Yes/no classifier accuracy | 18/18 |
 | Latency: extraction mean, p95; whole turn mean, p95, max | 2.1 s, 4.7 s; 2.5 s, 4.3 s, 11.0 s |
@@ -241,9 +273,11 @@ for every factual claim; the JSON reports keep every reply for reading.
 
 ## Hosting
 
-The hosted copy, <live-url>, runs **without a model key**: anyone can open it, sign up, open
-the menu and see the order ticket, and the page says that chat is off and points here. To chat
-with the real model, run MenuMind locally with your own key, as above.
+The hosted copy, https://menumind-production-4958.up.railway.app, runs on Railway with a persistent volume at `/data` and the
+model key set as a Railway variable (never in the repository): anyone can sign up and chat.
+Chat is capped in `server.py` (`CHAT_PER_USER`: 30 messages per customer per 10 minutes;
+`CHAT_TOTAL`: 300 a day across everyone, about 1.5M tokens), so a public URL cannot run up an
+unbounded bill. Without the key, the page says chat is off and points to "Run it".
 
 GitHub Pages only serves static files, and this app needs a running server (it holds the
 memory database, and the API key when there is one). Push the repository to GitHub, then
@@ -314,11 +348,9 @@ tune them from the latency the evaluation reports.
   reply is checked against memory as it stands when the reply is sent (another tab may have
   changed it meanwhile), so concurrent requests are safe on one instance. Several instances
   would need the optimistic concurrency described in SPEC §4.
-- **Known issues, deferred.** A review of every file (AUDIT.md: 117 findings, 25 fixed) left
+- **Known issues, deferred.** A review of every file (AUDIT.md: 118 findings, 27 fixed) left
   these open as the most important: removing your own allergy also drops a companion's
-  allergy set for this conversation only (`memory.py:436`); a reply that arrives after "New
-  conversation" or a sign-out is shown in the new conversation (`static/index.html:352`); the
-  evaluation's unsafe-recommendation count checks dishes against the app's own profile, so a
+  allergy set for this conversation only (`memory.py:436`); the evaluation's unsafe-recommendation count checks dishes against the app's own profile, so a
   missed allergy would not count (the final run captured every restriction, 10/10, so its 0
   holds); and a dish with no ingredients would load as vegan and allergen-free (no such dish
   on the menu).
