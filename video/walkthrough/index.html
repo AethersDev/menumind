@@ -614,7 +614,7 @@ SCENES.testing = (s, v, c) => {
   show(place(el("div", "eyebrow", "Tests · no model calls", c), 120, 92), v.t0 + .2);
   const n = place(el("div", "num lamp", "0<small>automated tests</small>", c), 120, 150);
   show(n, v.t0 + .3);
-  count(n, W.tests, cue(s, "hundred and ninety-six"), 1.4);
+  count(n, W.tests, cue(s, "hundred and ninety-seven"), 1.4);
   ["memory rules", "menu filtering", "customer isolation"].forEach((t, i) => show(place(el("div", "chip steel", t, c), 120 + [0, 270, 545][i], 520), cue(s, "without a model", .3 + i * .35), .35, { y: 12 }));
   const acc = cue(s, "an acceptance test over HTTP");
   const lines = W.acceptance.split("\n");  // acceptance.py's PASS lines, as printed (build.py checks them)

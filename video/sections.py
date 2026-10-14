@@ -102,7 +102,7 @@ SECTIONS = [
     # ------------------------------------------------------------------ results and validation
     dict(id="S17", part="Validation", title="Tests and evidence",
          visual=[("card", "testing", 0.45), ("card", "evidence")],
-         text="Validation: a hundred and ninety-six tests without a model, and an acceptance test "
+         text="Validation: a hundred and ninety-seven tests without a model, and an acceptance test "
               "over HTTP across a restart. On the real model, fourteen scripted conversations, run "
               "three times each, all passed, with no unsafe recommendation in seventy-five turns. "
               "A limited set: counts, not rates."),
