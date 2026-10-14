@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import re
+import threading
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
@@ -295,6 +296,33 @@ def test_unclear_answer_changes_nothing_and_asks_again(tmp_path):
     r = agent.turn("alice", c1, "hmm, not sure")
     assert r.trace["confirmation"] == "unclear" and r.question
     assert "Allergies: peanut" in r.profile["remembered"]
+
+
+def test_a_reply_honours_an_allergy_saved_while_it_was_written(tmp_path):
+    """Two tabs, one customer: while the first waits for the reply model, the second saves a
+    peanut allergy. The first reply must not then recommend satay (S4) as if nothing changed."""
+    writing, saved = threading.Event(), threading.Event()
+
+    def model(brief, messages):
+        if brief["customer_message"] == "What's good?":
+            writing.set()
+            saved.wait(5)
+            return says("Try this.", "S4")
+        return says("Noted.")
+
+    agent, _ = make_agent(tmp_path, responder=model)
+    c1, c2 = agent.start_conversation("alice"), agent.start_conversation("alice")
+    out = {}
+    first = threading.Thread(target=lambda: out.update(r=agent.turn("alice", c1, "What's good?")))
+    first.start()
+    assert writing.wait(5)
+    agent.turn("alice", c2, "I'm allergic to peanuts.")
+    saved.set()
+    first.join(5)
+    r, now = out["r"], agent.profile("alice", c1).active
+    assert "Allergies: peanut" in r.profile["remembered"]
+    assert not [m["id"] for m in r.mentioned
+                if m["kind"] == "rec" and hard_violations(MENU.get(m["id"]), now)]
 
 
 def test_recommended_dishes_are_rendered_by_code(tmp_path):

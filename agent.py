@@ -293,16 +293,26 @@ class Agent:
             trace.update(reply_errors=[], rejected=[], fallback=False)
         else:
             message, picks = self._reply(state, text, profile, recs, changes, notice, trace)
-        reply, mentioned = render(message, picks, self.menu, recs, profile.active["budget_max"])
-        # what changed and what must be answered are the app's words, never the model's
-        asks = " ".join(f"**{q}**" for q in questions)
-        reply = "\n\n".join(part for part in (_changes_line(changes), reply, asks) if part)
         with self._lock:
+            # another conversation may have saved a change while the model wrote (in review:
+            # satay, just after "I'm allergic to peanuts" in a second tab): the reply answers to
+            # what is enforced now, or is built from verified data
+            now = conv.profile()
+            if now.active != profile.active:
+                profile, recs = now, recommend(self.menu, now.active)
+                if problems := check_reply(message, picks, self.menu, recs):
+                    trace["reply_errors"].append(problems)
+                    message, picks = fallback_reply(recs, notice)
+                    trace["fallback"] = True
             shown = message or " ".join(questions)  # the model's next briefing sees what was asked
             state.history += [{"role": "user", "content": text},
                               {"role": "assistant",
                                "content": json.dumps({"message": shown, "recommend": picks})}]
             state.history = state.history[-HISTORY_MESSAGES:]
+        reply, mentioned = render(message, picks, self.menu, recs, profile.active["budget_max"])
+        # what changed and what must be answered are the app's words, never the model's
+        asks = " ".join(f"**{q}**" for q in questions)
+        reply = "\n\n".join(part for part in (_changes_line(changes), reply, asks) if part)
         return TurnResult(reply, mentioned, changes, question, profile_view(profile), trace)
 
     # ------------------------------------------------------------------ reply model

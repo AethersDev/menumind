@@ -40,15 +40,24 @@ SQLite file, created on first start. Tested on macOS with Python 3.13.
 ```bash
 git clone <repository-url> menumind
 cd menumind
+python3 run.py                          # Windows: py run.py
+```
+
+`run.py` creates `.venv`, installs `requirements.txt` into it, asks for your OpenAI API key
+(typed hidden, kept only in that process, never written to disk; press Enter to run with chat
+off) and starts the app. Then open http://127.0.0.1:8000. The same command starts it again
+later. On Debian or Ubuntu, `sudo apt install python3-venv` first. Tested from a fresh copy
+on macOS; on Linux and Windows it uses the standard `venv` layout but was not run there.
+
+Step by step instead:
+
+```bash
 python3 -m venv .venv
 source .venv/bin/activate              # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-
 export OPENAI_API_KEY="your-api-key"   # Windows PowerShell: $env:OPENAI_API_KEY="your-api-key"
 uvicorn server:app --port 8000
 ```
-
-Then open http://127.0.0.1:8000.
 
 The hosted copy, <live-url>, runs without a model key: open it to sign up and look around,
 but chatting needs a key, so run MenuMind locally as above to try the model.
@@ -143,6 +152,7 @@ want, I can suggest something from the menu." just above it (3 of 3 in the final
 | `recommend.py` | Hard filtering, soft ranking, grounded rendering and reply checks |
 | `agent.py` | One chat turn end to end |
 | `accounts.py`, `server.py` | Username and PIN sign-in, HTTP API |
+| `run.py` | One command to install and start the app on macOS, Linux or Windows |
 | `static/index.html` | The chat page |
 | `SPEC.md` | The memory specification: rules, invariants, test layers |
 | `test_*.py` | Tests (no model calls) |
@@ -155,7 +165,7 @@ want, I can suggest something from the menu." just above it (3 of 3 in the final
 ## Tests and evaluation
 
 ```bash
-pytest                                        # 196 tests, no API calls
+pytest                                        # 197 tests, no API calls
 ```
 
 The tests use a scripted model. Evidence that MenuMind works with a real model comes from two
@@ -300,9 +310,18 @@ tune them from the latency the evaluation reports.
   the old one has ended.
 - **"Tonight" means "this conversation".** Returning in a new conversation the same evening
   drops a temporary preference (SPEC §9).
-- **One server process.** Memory updates are serialized by a lock inside the process, so
-  concurrent requests are safe on one instance. Several instances would need the optimistic
-  concurrency described in SPEC §4.
+- **One server process.** Memory updates are serialized by a lock inside the process, and a
+  reply is checked against memory as it stands when the reply is sent (another tab may have
+  changed it meanwhile), so concurrent requests are safe on one instance. Several instances
+  would need the optimistic concurrency described in SPEC §4.
+- **Known issues, deferred.** A review of every file (AUDIT.md: 117 findings, 25 fixed) left
+  these open as the most important: removing your own allergy also drops a companion's
+  allergy set for this conversation only (`memory.py:436`); a reply that arrives after "New
+  conversation" or a sign-out is shown in the new conversation (`static/index.html:352`); the
+  evaluation's unsafe-recommendation count checks dishes against the app's own profile, so a
+  missed allergy would not count (the final run captured every restriction, 10/10, so its 0
+  holds); and a dish with no ingredients would load as vegan and allergen-free (no such dish
+  on the menu).
 - **Sign-in is deliberately simple.** Username and PIN, scrypt-hashed; 5 failed attempts
   per username lock it for 15 minutes; sessions last 30 days. The lock is per username, so
   anyone can lock a username out for 15 minutes, and there is no per-IP limit. That suits a
